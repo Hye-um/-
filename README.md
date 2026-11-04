@@ -1,1 +1,1 @@
-# - economy in school
+# economy in school
