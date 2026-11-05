@@ -1,5 +1,26 @@
-# 우리반 경제나라 — Streamlit 단일 파일 앱
-# 실행: streamlit run main.py
+# =============================================================
+#  우리반 경제나라 — 스트림릿 단일 파일 앱 (main.py)
+#  실행: streamlit run main.py
+#
+#  ▶ 여러 기기에서 같은 학급을 쓰는 방법
+#    - 이 앱은 스트림릿 서버에 학급 데이터를 모아 두고, 모든 기기가 같은 데이터를 봐요.
+#    - 데이터가 사라지지 않게 하려면, 스트림릿 클라우드의 Settings → Secrets 에
+#      아래 두 줄을 넣어 "비공개 깃허브 저장소"에 자동 저장되게 하세요.
+#          GITHUB_TOKEN = "github_pat_..."
+#          GITHUB_REPO  = "내아이디/class-economy-data"
+#    - Secrets가 없으면 "임시 저장 모드"로 동작해요 (앱이 다시 시작되면 사라질 수 있음).
+# =============================================================
+import base64
+import hashlib
+import json
+import os
+import tempfile
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -33,6 +54,7 @@ body[data-theme=berry]{--bg:#FFF4F7;--bg2:#FFE0E9;--accent:#F5A3BC;--accent-d:#E
 *{box-sizing:border-box}
 html{font-size:16px}
 body{margin:0;font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;transition:background .3s}
+#scroller{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #app{max-width:1040px;margin:0 auto;padding:16px 16px 60px;min-height:100vh}
 h1,h2,h3,.jua{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:400}
 h1{margin:6px 0}
@@ -212,7 +234,7 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="scroller"><div id="app"></div></div>
 <div id="modal-root"></div>
 <div id="toast"></div>
 <div id="dim"></div>
@@ -247,14 +269,131 @@ function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('sho
 function modal(title, body, actions){
   $('modal-root').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><h3>${title}</h3><div>${body}</div><div class="acts">${actions||''}<button class="btn sub" onclick="closeModal()">닫기</button></div></div></div>`;
 }
-function closeModal(){ $('modal-root').innerHTML=''; }
+function closeModal(){ $('modal-root').innerHTML=''; setTimeout(syncIdle,0); }
 let _cb=null;
 function ask(msg, cb, ok){ _cb=cb; modal('🤔 확인해 주세요', `<p>${msg}</p>`, `<button class="btn" onclick="runCb()">${ok||'확인'}</button>`); }
 function runCb(){ const f=_cb; _cb=null; closeModal(); if(f) f(); }
 
 /* ---------- 데이터 ---------- */
 let DB = null;
-function save(){ lsSet(STORE, JSON.stringify(DB)); }
+function save(){ lsSet(STORE, JSON.stringify(DB)); syncSoon(); }
+
+/* ---------- 여러 기기 동기화 (스트림릿 서버와 주고받기) ---------- */
+const SYNC = {on: window.parent!==window, got:false, ready:false, ver:0, base:null, sent:null, seq:0, nonce:0,
+  cid: Date.now().toString(36)+Math.random().toString(36).slice(2,12), timer:null, pending:null, needRender:false, mode:'', err:''};
+const clone = o => JSON.parse(JSON.stringify(o));
+function stable(o){
+  if(o===null || typeof o!=='object') return JSON.stringify(o);
+  if(Array.isArray(o)) return '['+o.map(stable).join(',')+']';
+  return '{'+Object.keys(o).filter(k=>o[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+stable(o[k])).join(',')+'}';
+}
+const same = (a,b) => a===b || stable(a)===stable(b);
+const isObj = o => o!==null && typeof o==='object' && !Array.isArray(o);
+const keyOf = x => isObj(x) ? (x.id!==undefined ? 'i'+x.id : (x.code!==undefined ? 'c'+x.code : null)) : null;
+/* 같은 시간에 두 기기가 바꾼 내용을 합치기 (b: 공통 원본, m: 내 것, t: 서버 것) */
+function merge3(b,m,t){
+  if(same(m,b)) return clone(t);
+  if(same(t,b) || same(m,t)) return clone(m);
+  if(typeof m==='number' && typeof t==='number' && typeof b==='number') return t+(m-b);   // 잔액·재고는 변화량을 더함
+  if(Array.isArray(m) && Array.isArray(t)){
+    const bb = Array.isArray(b) ? b : [], all=[...bb,...m,...t];
+    if(all.every(x=>keyOf(x)!==null)) return mergeKeyed(bb,m,t);
+    if(all.every(x=>x===null || typeof x!=='object')){
+      const out=t.filter(x=>!(bb.includes(x) && !m.includes(x)));
+      m.forEach(x=>{ if(!bb.includes(x) && !out.includes(x)) out.push(x); });
+      return out;
+    }
+    return clone(m);
+  }
+  if(isObj(m) && isObj(t)){
+    const bb = isObj(b) ? b : {}, out={};
+    new Set([...Object.keys(t), ...Object.keys(m)]).forEach(k=>{
+      const inM=k in m, inT=k in t, inB=k in bb;
+      if(inM && inT) out[k]=merge3(bb[k], m[k], t[k]);
+      else if(inM){ if(!inB) out[k]=clone(m[k]); }
+      else if(inT){ if(!inB) out[k]=clone(t[k]); }
+    });
+    return out;
+  }
+  return clone(m);
+}
+function mergeKeyed(b,m,t){
+  const bm=new Map(b.map(x=>[keyOf(x),x])), mm=new Map(m.map(x=>[keyOf(x),x])), tm=new Map(t.map(x=>[keyOf(x),x]));
+  const mid=[], front=[], back=[]; let old=false;
+  t.forEach(x=>{ const k=keyOf(x); if(mm.has(k)) mid.push(merge3(bm.get(k), mm.get(k), x)); else if(!bm.has(k)) mid.push(clone(x)); });
+  m.forEach(x=>{ const k=keyOf(x); if(tm.has(k) || bm.has(k)){ old=true; return; } (old?back:front).push(clone(x)); });
+  return [...front, ...mid, ...back];
+}
+function syncSend(){
+  if(!SYNC.on) return;
+  SYNC.nonce++;
+  const value = {cid:SYNC.cid, nonce:SYNC.nonce, baseVer:SYNC.ver, save: SYNC.sent ? {seq:SYNC.sent.seq, base:SYNC.sent.base, db:SYNC.sent.db} : null};
+  try{ window.parent.postMessage({isStreamlitMessage:true, type:'streamlit:setComponentValue', value, dataType:'json'}, '*'); }catch(e){}
+}
+function syncSoon(){ if(!SYNC.on || !SYNC.ready) return; clearTimeout(SYNC.timer); SYNC.timer=setTimeout(syncFlush, 250); }
+function syncFlush(){
+  if(!SYNC.on || !SYNC.ready || SYNC.sent) return;
+  if(SYNC.base && stable(DB)===stable(SYNC.base)) return;
+  SYNC.seq++; SYNC.sent = {seq:SYNC.seq, base:SYNC.ver, db:clone(DB), fresh:!SYNC.base};
+  syncSend();
+}
+function syncBusy(){
+  if($('modal-root').innerHTML) return true;
+  const a=document.activeElement;
+  return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('app').contains(a));
+}
+function syncIdle(){
+  if(SYNC.pending && !$('modal-root').innerHTML) onServer(SYNC.pending);
+  if(SYNC.needRender && !syncBusy()){ SYNC.needRender=false; render(); }
+}
+function onServer(a){
+  if(!a) return;
+  const first = !SYNC.got;
+  SYNC.got=true; SYNC.mode=a.storage||''; SYNC.err=a.err||'';
+  if($('modal-root').innerHTML){ SYNC.pending=a; return; }     // 창이 열려 있으면 닫힌 뒤에 반영
+  SYNC.pending=null;
+  if(!a.ready){ if(first) render(); return; }
+  if(!SYNC.ready){
+    SYNC.ready=true; SYNC.ver=a.ver;
+    if(a.fresh && Object.keys(DB.classes).length){ syncFlush(); render(); return; }  // 서버가 비어 있으면 이 기기 데이터로 시작
+  }
+  const srv = a.db ? JSON.parse(a.db) : null;
+  let myBase = SYNC.base;
+  if(SYNC.sent){
+    if((a.seen||0) < SYNC.sent.seq) return;                   // 서버가 아직 처리 전
+    const ok = (a.acc||0) >= SYNC.sent.seq;
+    myBase = ok ? SYNC.sent.db : (SYNC.sent.fresh ? DB : SYNC.base);
+    SYNC.sent=null;
+  }
+  if(srv){
+    const before = stable(DB);
+    const merged = (!myBase || stable(myBase)===before) ? srv : merge3(myBase, DB, srv);
+    DB = clone(merged); if(!isObj(DB.classes)) DB.classes={};
+    Object.values(DB.classes).forEach(fillDefaults);
+    SYNC.base = srv; SYNC.ver = a.ver;
+    lsSet(STORE, JSON.stringify(DB));
+    if(first || stable(DB)!==before){ if(syncBusy()) SYNC.needRender=true; else render(); }
+  }
+  syncFlush();
+}
+function syncStart(){
+  if(!SYNC.on) return;
+  window.addEventListener('message', e=>{ const d=e.data; if(d && d.type==='streamlit:render') onServer(d.args && d.args.sync); });
+  const post = m => { try{ window.parent.postMessage(Object.assign({isStreamlitMessage:true}, m), '*'); }catch(e){} };
+  const fit = () => { let h=900; try{ h=window.parent.innerHeight||900; }catch(e){} post({type:'streamlit:setFrameHeight', height:Math.max(480, h-6)}); };
+  post({type:'streamlit:componentReady', apiVersion:1});
+  fit(); try{ window.parent.addEventListener('resize', fit); }catch(e){} window.addEventListener('resize', fit);
+  setInterval(syncIdle, 700);
+  (function poll(){ syncSend(); setTimeout(poll, document.hidden ? 15000 : 3000); })();
+  setTimeout(()=>{ if(!SYNC.got){ SYNC.got=true; render(); } }, 6000);
+}
+function storageNote(){
+  if(!SYNC.on) return `<div class="sub mt">💻 이 기기에만 저장되고 있어요</div>`;
+  if(SYNC.err) return `<div class="alert">⚠️ 온라인 저장소 문제: ${esc(SYNC.err)}</div>`;
+  if(SYNC.mode==='github' && SYNC.ready) return `<div class="mt"><span class="chip mint">☁️ 온라인 저장 연결됨 · 어느 기기에서나 열려요</span></div>`;
+  if(SYNC.mode==='memory') return `<div class="alert">⚠️ 임시 저장 모드: 다른 기기에서도 열리지만, 앱이 잠들거나 다시 시작되면 사라질 수 있어요. 깃허브 데이터 저장소를 연결해 주세요.</div>`;
+  return '';
+}
 
 function blankClass(code,name,pin){
   return {
@@ -416,8 +555,9 @@ function badges(){
   }
   return b;
 }
-function openApp(k,tab){ S.screen='app'; S.app=k; S.tab=tab||''; render(); window.scrollTo(0,0); }
-function goHome(){ S.screen='home'; S.app=''; S.tab=''; render(); window.scrollTo(0,0); }
+function toTop(){ const s=$('scroller'); if(s) s.scrollTop=0; }
+function openApp(k,tab){ S.screen='app'; S.app=k; S.tab=tab||''; render(); toTop(); }
+function goHome(){ S.screen='home'; S.app=''; S.tab=''; render(); toTop(); }
 function setTab(t){ S.tab=t; render(); }
 function togglePreview(){ S.preview=!S.preview; S.tab=''; render(); toast(S.preview?'👀 학생 화면을 보여주고 있어요':'👩‍🏫 선생님 화면으로 돌아왔어요'); }
 function tabs(list){
@@ -435,6 +575,9 @@ function doRename(key){ const v=val('rnIn'); if(!v) return toast('이름을 입�
    화면 그리기
    ========================================================= */
 function render(){
+  if(SYNC.on && !SYNC.got && S.screen!=='code' && !C()){
+    $('app').innerHTML=`<div class="center-screen"><div class="card login-card"><div class="logo">☁️</div><h1>연결하는 중…</h1><p class="sub">잠시만 기다려 주세요</p></div></div>`; return;
+  }
   if(S.screen!=='code' && !C()) S=freshS();
   if((S.screen==='home'||S.screen==='app') && S.role==='student' && !me()) S=freshS();
   applyPrefs();
@@ -460,13 +603,27 @@ function vCode(){
     <input id="codeIn" class="big-input" placeholder="학급 코드" maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')enterCode()">
     <button class="btn wide" onclick="enterCode()">입장하기 ➜</button>
     ${DB.classes.SUNNY?`<div class="hint">🌟 체험용 학급 코드 <b>SUNNY</b><br>선생님 비밀번호 0000 · 학생(김하늘) 1111</div>`:''}
-    <button class="link" onclick="openNewClass()">👩‍🏫 선생님: 새 학급 만들기</button>
+    <button class="link" onclick="openNewClass()">👩‍🏫 선생님: 새 학급 만들기</button><br>
+    <button class="link" onclick="restoreNewForm()">💾 백업 파일로 학급 되살리기</button>
   </div></div>`;
+}
+function restoreNewForm(){
+  modal('💾 백업으로 학급 되살리기', `<p class="sub">설정 → [백업 파일 받기]로 저장해 둔 파일을 고르세요.</p>
+    <input type="file" accept=".json,application/json" onchange="readBackup(this)">
+    <label class="f">또는 백업 글자 붙여넣기</label><textarea id="rsT" rows="6"></textarea>`,
+    `<button class="btn" onclick="restoreNew()">되살리기</button>`);
+}
+function restoreNew(){
+  let d; try{ d=JSON.parse(val('rsT')); }catch(e){ return toast('백업 형식이 올바르지 않아요'); }
+  if(!d || !Array.isArray(d.students) || !d.teacherPin || !d.code) return toast('경제나라 백업이 아니에요');
+  const go=()=>{ DB.classes[d.code]=fillDefaults(d); save(); closeModal(); S=freshS(); S.code=d.code; S.screen='role'; render(); toast('학급을 되살렸어요! 🎉'); };
+  if(DB.classes[d.code]){ closeModal(); ask(`이 기기에 이미 <b>${esc(d.code)}</b> 학급이 있어요. 백업으로 덮어쓸까요?`, go, '덮어쓰기'); }
+  else go();
 }
 function enterCode(){
   const code=val('codeIn').toUpperCase();
   if(!code) return toast('학급 코드를 입력하세요');
-  if(!DB.classes[code]) return toast('학급 코드를 찾을 수 없어요 😢');
+  if(!DB.classes[code]) return toast(SYNC.on && !SYNC.ready ? '☁️ 아직 연결 중이에요. 잠시 후 다시 눌러 주세요' : '학급 코드를 찾을 수 없어요 😢');
   S.code=code; S.screen='role'; render();
 }
 function randCode(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<6;i++) s+=a[Math.floor(Math.random()*a.length)]; return DB.classes[s]?randCode():s; }
@@ -553,7 +710,8 @@ function vHome(){
       <div class="stats3"><div class="stat"><div class="n">${c.students.length}명</div><div class="sub">학생</div></div>
       <div class="stat"><div class="n">${won(c.budget)}</div><div class="sub">정부 예산</div></div>
       <div class="stat"><div class="n">${pend}건</div><div class="sub">처리할 일</div></div></div>
-      <div class="sub mt">학급 코드 <b>${esc(c.code)}</b> · 학생들에게 알려주세요</div></div>`;
+      <div class="sub mt">학급 코드 <b>${esc(c.code)}</b> · 학생들에게 알려주세요</div>${storageNote()}
+      ${(!c.lastBackup || Date.now()-new Date(c.lastBackup).getTime() > 2*864e5) ? `<div class="alert">💾 ${c.lastBackup?`마지막 백업이 ${Math.floor((Date.now()-new Date(c.lastBackup).getTime())/864e5)}일 전이에요.`:'아직 백업한 적이 없어요.'} 데이터를 잃지 않게 백업해 두세요! <button class="btn sm" onclick="backupFile()">지금 백업</button></div>` : ''}</div>`;
   }
   const n=c.notices[0];
   const notice = n ? `<div class="card notice" onclick="openApp('news','notice')"><b>📢 ${esc(n.title)}</b><div class="sub clip">${esc(n.body)}</div></div>` : '';
@@ -1472,11 +1630,12 @@ function changeCode(){
   ask(`학급 코드를 <b>${code}</b>(으)로 바꿀까요?<br><span class="sub">학생들에게 새 코드를 알려주세요.</span>`, ()=>{ const c=C(); delete DB.classes[c.code]; c.code=code; DB.classes[code]=c; S.code=code; save(); render(); toast('학급 코드를 바꿨어요'); });
 }
 function backupFile(){
+  C().lastBackup=now(); save(); if(S.screen==='home') render();
   const data=JSON.stringify(C(),null,1), name=`경제나라_${C().code}_${fday(now()).replace(/\./g,'-')}.json`;
   try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('백업 파일을 받았어요 💾'); }
   catch(e){ backupText(); }
 }
-function backupText(){ modal('📋 백업 데이터', `<p class="sub">아래 글자를 모두 복사해서 메모장 등에 저장해 두세요.</p><textarea rows="10" readonly onclick="this.select()">${esc(JSON.stringify(C()))}</textarea>`, ''); }
+function backupText(){ C().lastBackup=now(); save(); modal('📋 백업 데이터', `<p class="sub">아래 글자를 모두 복사해서 메모장 등에 저장해 두세요.</p><textarea rows="10" readonly onclick="this.select()">${esc(JSON.stringify(C()))}</textarea>`, ''); }
 function restoreForm(){ modal('⬆️ 백업 불러오기', `<p class="sub">백업 파일을 고르거나, 백업 글자를 붙여 넣으세요. <b class="minus">지금 학급 데이터가 바뀌어요!</b></p><input type="file" accept=".json,application/json" onchange="readBackup(this)"><label class="f">또는 붙여넣기</label><textarea id="rsT" rows="6"></textarea>`, `<button class="btn danger" onclick="restore()">불러오기</button>`); }
 function readBackup(inp){ const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ $('rsT').value=r.result; toast('파일을 읽었어요. [불러오기]를 누르세요'); }; r.readAsText(f); }
 function restore(){
@@ -1495,6 +1654,7 @@ function deleteClass(){
 (function init(){
   try{ DB=JSON.parse(lsGet(STORE)||'null'); }catch(e){ DB=null; }
   if(!DB || !DB.classes) DB={classes:{}};
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
   if(!Object.keys(DB.classes).length) makeDemo();
   Object.values(DB.classes).forEach(fillDefaults);
   try{ const ss=sessionStorage.getItem('ce_session'); if(ss) S=Object.assign(freshS(), JSON.parse(ss)); }catch(e){}
@@ -1505,12 +1665,196 @@ function deleteClass(){
     if(/^[0-9]$/.test(e.key)) pinKey(e.key);
     else if(e.key==='Backspace') pinKey('←');
   });
-  window.addEventListener('storage', e=>{ if(e.key===STORE){ try{ DB=JSON.parse(e.newValue); render(); }catch(err){} } });
   render();
+  syncStart();
 })();
 </script>
 </body>
 </html>
 """
 
-components.html(APP_HTML, height=1000, scrolling=True)
+
+def _secret(name, default=""):
+    try:
+        v = st.secrets.get(name, None)
+        if v:
+            return str(v)
+    except Exception:
+        pass
+    return os.environ.get(name, default)
+
+
+class Store:
+    """모든 기기가 함께 쓰는 학급 데이터 (서버 메모리 + 깃허브 자동 저장)."""
+
+    SAVE_EVERY = 15  # 초
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.db_json = '{"classes":{}}'
+        self.ver = 0
+        self.fresh = True
+        self.seen, self.acc = {}, {}
+        self.dirty = False
+        self.sha = None
+        self.err = ""
+        self.token = _secret("GITHUB_TOKEN").strip()
+        self.repo = _secret("GITHUB_REPO").strip().strip("/")
+        self.path = _secret("GITHUB_PATH", "class_economy_data.json").strip()
+        self.api = _secret("GITHUB_API", "https://api.github.com").rstrip("/")
+        self.mode = "github" if (self.token and self.repo) else "memory"
+        self.ready = self.mode == "memory"
+        if self.mode == "github":
+            threading.Thread(target=self._loop, daemon=True).start()
+
+    # ---------- 깃허브 ----------
+    def _http(self, method, url, body=None, accept="application/vnd.github+json"):
+        data = json.dumps(body).encode("utf-8") if body is not None else None
+        headers = {
+            "Authorization": "Bearer " + self.token,
+            "Accept": accept,
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "class-economy-app",
+        }
+        if data is not None:
+            headers["Content-Type"] = "application/json"
+        req = urllib.request.Request(url, data=data, method=method, headers=headers)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.read()
+
+    def _file_url(self):
+        return "%s/repos/%s/contents/%s" % (self.api, self.repo, urllib.parse.quote(self.path))
+
+    def _load(self):
+        try:
+            self._http("GET", "%s/repos/%s" % (self.api, self.repo))
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                self.err = "깃허브 토큰이 올바르지 않거나 만료됐어요. 새 토큰을 Secrets에 넣어 주세요."
+            elif e.code in (403, 404):
+                self.err = "깃허브 저장소(%s)를 찾을 수 없어요. 저장소 이름과 토큰 권한을 확인해 주세요." % self.repo
+            else:
+                self.err = "깃허브 오류 %s" % e.code
+            return False
+        except Exception as e:
+            self.err = "깃허브에 연결할 수 없어요 (%s)" % e.__class__.__name__
+            return False
+        try:
+            meta = json.loads(self._http("GET", self._file_url()))
+            raw = self._http("GET", self._file_url(), accept="application/vnd.github.raw")
+            db = json.loads(raw.decode("utf-8"))
+            if not isinstance(db, dict) or not isinstance(db.get("classes"), dict):
+                raise ValueError("bad data")
+            with self.lock:
+                self.sha = meta.get("sha")
+                self.db_json = json.dumps(db, ensure_ascii=False, separators=(",", ":"))
+                self.ver, self.fresh, self.ready, self.err = 1, False, True, ""
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                self.err = "데이터 파일을 읽지 못했어요 (오류 %s)" % e.code
+                return False
+            with self.lock:  # 아직 데이터 파일이 없음 → 처음 시작
+                self.sha, self.ready, self.fresh, self.err = None, True, True, ""
+        except Exception as e:
+            self.err = "데이터 파일을 읽지 못했어요 (%s)" % e.__class__.__name__
+            return False
+        return True
+
+    def _push(self):
+        with self.lock:
+            if not self.dirty:
+                return
+            body, self.dirty = self.db_json, False
+        payload = {
+            "message": "학급 데이터 자동 저장",
+            "content": base64.b64encode(body.encode("utf-8")).decode("ascii"),
+        }
+        for attempt in range(2):
+            if self.sha:
+                payload["sha"] = self.sha
+            else:
+                payload.pop("sha", None)
+            try:
+                res = json.loads(self._http("PUT", self._file_url(), payload))
+                self.sha = (res.get("content") or {}).get("sha")
+                self.err = ""
+                return
+            except urllib.error.HTTPError as e:
+                if e.code in (409, 422) and attempt == 0:
+                    try:
+                        self.sha = json.loads(self._http("GET", self._file_url())).get("sha")
+                    except urllib.error.HTTPError as e2:
+                        if e2.code == 404:
+                            self.sha = None
+                    except Exception:
+                        pass
+                    continue
+                self.err = "온라인 저장에 실패했어요 (오류 %s)" % e.code
+            except Exception as e:
+                self.err = "온라인 저장에 실패했어요 (%s)" % e.__class__.__name__
+            break
+        with self.lock:
+            self.dirty = True  # 다음에 다시 시도
+
+    def _loop(self):
+        while True:
+            try:
+                if not self.ready:
+                    if not self._load():
+                        time.sleep(10)
+                        continue
+                self._push()
+            except Exception as e:
+                self.err = "저장 오류 (%s)" % e.__class__.__name__
+            time.sleep(self.SAVE_EVERY)
+
+    # ---------- 기기와 주고받기 ----------
+    def handle(self, msg):
+        msg = msg if isinstance(msg, dict) else {}
+        cid = str(msg.get("cid") or "")[:64]
+        with self.lock:
+            sv = msg.get("save")
+            if self.ready and cid and isinstance(sv, dict):
+                try:
+                    seq, base = int(sv.get("seq", 0)), int(sv.get("base", -1))
+                except (TypeError, ValueError):
+                    seq, base = 0, -1
+                if seq > self.seen.get(cid, 0):
+                    self.seen[cid] = seq
+                    db = sv.get("db")
+                    if base == self.ver and isinstance(db, dict) and isinstance(db.get("classes"), dict):
+                        self.db_json = json.dumps(db, ensure_ascii=False, separators=(",", ":"))
+                        self.ver += 1
+                        self.fresh = False
+                        self.acc[cid] = seq
+                        self.dirty = True
+            out = {
+                "ready": self.ready, "ver": self.ver, "fresh": self.fresh,
+                "storage": self.mode, "err": self.err,
+                "seen": self.seen.get(cid, 0), "acc": self.acc.get(cid, 0),
+            }
+            if self.ready and msg.get("baseVer") != self.ver:
+                out["db"] = self.db_json
+        return out
+
+
+@st.cache_resource
+def get_store():
+    return Store()
+
+
+@st.cache_resource
+def get_component():
+    folder = os.path.join(
+        tempfile.gettempdir(),
+        "class_economy_" + hashlib.md5(APP_HTML.encode("utf-8")).hexdigest()[:10],
+    )
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "index.html"), "w", encoding="utf-8") as f:
+        f.write(APP_HTML)
+    return components.declare_component("class_economy", path=folder)
+
+
+store = get_store()
+economy = get_component()
+economy(sync=store.handle(st.session_state.get("economy")), key="economy", default=None)
