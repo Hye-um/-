@@ -440,6 +440,18 @@ input[type=range]{border:none;box-shadow:none}
 body.logged #app{min-height:100%}
 .desktop{min-height:100%}
 #scroller{overscroll-behavior:contain}
+
+.lock{min-height:100%}
+body:not(.logged) #app{min-height:100%}
+@media (max-height:820px){
+  .lock{padding:16px 16px 20px;gap:4px}
+  .lock-clock{font-size:2.8rem;padding:4px 20px}
+  .lock-date{margin:8px 0 12px}
+  .login-win .login-card{padding:16px 22px 18px}
+  .logo-ic{width:60px;height:60px} .logo-ic .appic{width:60px;height:60px}
+  .big-input{margin:10px 0}
+  .hint{margin:12px 0 4px}
+}
 </style>
 </head>
 <body>
@@ -1143,6 +1155,7 @@ function render(){
     h=`<div class="lock"><div class="lock-clock" id="lockClock">${clockText()}</div><div class="lock-date">${dateText()}</div>
       <div class="win login-win ${S.screen==='pick'?'wide':''}"><div class="win-title" style="background:${titleColor('school')}"><span class="win-name">${{code:'우리반 경제나라',role:'로그인',pick:'학생 로그인',pin:'비밀번호'}[S.screen]}</span><span class="win-btn deco">${svgI('min')}</span><span class="win-btn deco">${svgI('close')}</span></div>${h}</div></div>`;
   $('app').innerHTML=tidy(h);
+  fitLock();
   saveSess();
 }
 
@@ -1241,6 +1254,16 @@ function checkPin(){
 }
 function logout(){ const code=S.code; S=freshS(); S.code=code; S.screen='role'; render(); toast('로그아웃했어요 👋'); }
 
+/* ---------- 로그인 화면을 화면 높이에 맞추기 ---------- */
+function fitLock(){
+  const lk=document.querySelector('#app > .lock'), sc=$('scroller'); if(!lk||!sc) return;
+  lk.style.zoom=''; lk.style.minHeight='0';
+  const H=sc.clientHeight, need=lk.scrollHeight;
+  const z = need>H ? Math.max(.5, (H-4)/need) : 1;
+  if(z<1) lk.style.zoom=z.toFixed(3);
+  lk.style.minHeight=Math.floor(H/z)+'px';
+}
+window.addEventListener('resize', fitLock);
 /* ---------- 작업 표시줄 / 바탕화면 / 창 ---------- */
 function userName(){ return S.role==='teacher' ? '선생님' : ((me()||{}).name||''); }
 function taskbar(a){
