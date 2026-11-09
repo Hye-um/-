@@ -151,6 +151,8 @@ label.f{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--sub)}
 table.t{width:100%;border-collapse:collapse;font-size:.95rem}
 .t th{font-family:'Jua';font-weight:400;color:var(--sub);text-align:left;padding:8px;border-bottom:2px solid var(--line);white-space:nowrap}
 .t td{padding:8px;border-bottom:1px dashed var(--line);vertical-align:middle}
+.t td.r{white-space:nowrap}
+.t input.num{width:78px}
 .t td.r,.t th.r{text-align:right}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
 .kv:last-child{border-bottom:none}
@@ -161,7 +163,7 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}
 .item .grow{flex:1;min-width:0}
 .item .emo{font-size:30px;width:42px;text-align:center}
 .status{border-radius:8px;padding:2px 9px;font-size:.82rem;white-space:nowrap}
-.st-pending{background:var(--yel)} .st-approved{background:var(--mint)} .st-rejected{background:#F3E3E3}
+.st-pending{background:var(--yel)} .st-approved,.st-active{background:var(--mint)} .st-rejected{background:#F3E3E3} .st-ended,.st-cancelled{background:#EEE7E2}
 
 /* 마트 */
 .prod{text-align:center;display:flex;flex-direction:column;gap:6px}
@@ -405,18 +407,69 @@ function blankClass(code,name,pin){
     taxNotices:[], taxBills:[], notices:[], news:[],
     law:{preamble:'', articles:[]},
     stocks:[], holdings:{}, brokerCodes:[],
-    seatCfg:{rows:4, cols:6, price:300}, seats:[], seatReqs:[],
+    seatCfg:{rows:4, cols:6, price:300, cycle:14}, seats:[], seatReqs:[], seatRound:'',
     ins:{fund:0, plans:[], members:{}, claims:[]},
+    fees:{electric:50, meal:200},
+    creditCfg:{max:1000, start:700},
+    creditRules:defaultCreditRules(), creditItems:defaultCreditItems(), creditLog:[],
     teacherPrefs:{}
   };
 }
+function defaultCreditRules(){
+  return [
+    {id:'tax_pay',     on:true,  pts:5,   n:0, up:true},
+    {id:'save_streak', on:true,  pts:3,   n:3, up:true},
+    {id:'pay_streak',  on:false, pts:2,   n:4, up:true},
+    {id:'tax_late',    on:true,  pts:-5,  n:3, up:false},
+    {id:'minus_bal',   on:true,  pts:-10, n:0, up:false},
+    {id:'save_break',  on:false, pts:-1,  n:0, up:false}
+  ];
+}
+function defaultCreditItems(){
+  return [
+    {id:uid(), label:'친구를 도왔어요', pts:3},
+    {id:uid(), label:'맡은 일을 성실히 했어요', pts:5},
+    {id:uid(), label:'약속을 어겼어요', pts:-5},
+    {id:uid(), label:'규칙을 지키지 않았어요', pts:-3}
+  ];
+}
+const RULE_TEXT = {
+  tax_pay:     r=>'세금 고지서를 냈을 때',
+  save_streak: r=>`${r.n}달 연속 적금(예금 넣기)을 했을 때`,
+  pay_streak:  r=>`월급을 ${r.n}번 연속 받았을 때 (꾸준히 일하기)`,
+  tax_late:    r=>`세금 고지서를 ${r.n}일 넘게 내지 않았을 때`,
+  minus_bal:   r=>'통장 잔액이 마이너스(−)가 되었을 때',
+  save_break:  r=>'예금을 중간에 찾았을 때'
+};
+function basicPlan(c){ return c.ins.plans.find(p=>p.basic); }
 function fillDefaults(c){
   const b = blankClass(c.code, c.name, c.teacherPin);
   for(const k in b){ if(c[k]===undefined) c[k]=b[k]; }
   for(const k in b.names){ if(!c.names[k]) c.names[k]=b.names[k]; }
   for(const k in b.features){ if(c.features[k]===undefined) c.features[k]=false; }
   for(const k in b.ins){ if(c.ins[k]===undefined) c.ins[k]=b.ins[k]; }
-  c.students.forEach(s=>{ s.certs=s.certs||[]; s.prefs=s.prefs||{}; s.savings=s.savings||0; if(s.credit===undefined) s.credit=700; });
+  for(const k in b.fees){ if(c.fees[k]===undefined) c.fees[k]=b.fees[k]; }
+  for(const k in b.creditCfg){ if(!c.creditCfg[k]) c.creditCfg[k]=b.creditCfg[k]; }
+  if(!c.seatCfg.cycle) c.seatCfg.cycle=14;
+  b.creditRules.forEach(r=>{ if(!c.creditRules.find(x=>x.id===r.id)) c.creditRules.push(r); });
+  // 기본 건강보험(필수)
+  if(!basicPlan(c)){
+    const old=c.ins.plans.find(p=>p.name==='기본 건강보험');
+    if(old) old.basic=true; else c.ins.plans.unshift({id:uid(), basic:true, name:'기본 건강보험', premium:100, coverage:500, desc:'모든 학생이 꼭 가입하는 기본 보험이에요. 아프거나 다쳤을 때 보험금을 받아요.'});
+  }
+  const bp=basicPlan(c);
+  // 예전 방식 자리 요청은 정리
+  c.seatReqs.forEach(r=>{ if(r.status==='pending' && r.from===undefined) r.status='cancelled'; });
+  c.students.forEach(s=>{
+    s.certs=s.certs||[]; s.prefs=s.prefs||{}; s.savings=s.savings||0;
+    if(s.credit===undefined) s.credit=c.creditCfg.start;
+    if(s.allowance===undefined) s.allowance=0;
+    if(s.royalty===undefined) s.royalty=0;
+    if(!s.saveMonths) s.saveMonths=[];
+    if(!s.awards) s.awards={};
+    if(s.payStreak===undefined) s.payStreak=0;
+    if(!c.ins.members[s.id] || !c.ins.plans.find(p=>p.id===c.ins.members[s.id])) c.ins.members[s.id]=bp.id;
+  });
   return c;
 }
 function seedClass(code,name,pin){
@@ -456,9 +509,17 @@ function seedClass(code,name,pin){
   };
   c.notices = [{id:uid(), title:'우리반 경제나라에 오신 것을 환영해요! 🎉', body:'직업을 갖고, 월급을 받고, 세금도 내면서 진짜 경제를 배워 봐요.\n궁금한 것은 언제든 선생님께 물어보세요.', date:now()}];
   c.taxNotices = [{id:uid(), title:'세금은 왜 낼까요? 🤔', body:'세금은 우리 반 모두를 위한 돈이에요.\n모인 세금은 학급 행사, 간식 파티, 공공 물품을 사는 데 쓰여요.\n월급을 받을 때 직업별 세율만큼 자동으로 세금이 빠져나가요.', date:now()}];
+  fillDefaults(c);
   return c;
 }
-function newStudent(n,name,pin){ return {id:uid(), num:n, name, pin:pin||rand4(), jobId:'', balance:0, savings:0, credit:700, certs:[], prefs:{}}; }
+function newStudent(n,name,pin,credit){
+  const c=C()||null;
+  const s={id:uid(), num:n, name, pin:pin||'1004', jobId:'', balance:0, savings:0,
+    credit: credit!==undefined ? credit : (c ? c.creditCfg.start : 700),
+    certs:[], prefs:{}, allowance:0, royalty:0, saveMonths:[], awards:{}, payStreak:0};
+  if(c){ const bp=basicPlan(c); if(bp) c.ins.members[s.id]=bp.id; }
+  return s;
+}
 function makeDemo(){
   const c = seedClass('SUNNY','햇살반','0000');
   [['김하늘','1111'],['이바다','2222'],['박구름','3333'],['최별','4444'],['정나무','5555'],['한솔','6666']].forEach(([n,p],i)=>{
@@ -469,6 +530,7 @@ function makeDemo(){
     c.tx.push({id:uid(), sid:s.id, amount:3000, type:'입금', memo:'시작 자금', date:now(), bal:3000});
     c.students.push(s);
   });
+  fillDefaults(c);
   DB.classes[c.code] = c;
   save();
 }
@@ -494,11 +556,44 @@ const jobById = id => C().jobs.find(j=>j.id===id);
 const jobOf = s => s && s.jobId ? jobById(s.jobId) : null;
 const certById = id => C().certs.find(x=>x.id===id);
 const sorted = () => [...C().students].sort((a,b)=>a.num-b.num);
-function grade(s){ return Math.min(10, Math.max(1, 10 - Math.floor(((s.credit||0)-1)/100))); }
-function addCredit(s,n){ s.credit = Math.max(0, Math.min(1000, (s.credit||700)+n)); }
+function creditMax(){ const c=C(); return (c && c.creditCfg.max) || 1000; }
+function grade(s){ const step=creditMax()/10; return Math.min(10, Math.max(1, 10 - Math.floor(((s.credit||0)-1)/step))); }
+function addCredit(s, n, reason){
+  if(!s || !n || s.id==='__preview') return;
+  const c=C(), before=s.credit||0;
+  s.credit = Math.max(0, Math.min(creditMax(), before+n));
+  const d=s.credit-before; if(!d) return;
+  c.creditLog.unshift({id:uid(), sid:s.id, delta:d, reason:reason||'', date:now()});
+  if(c.creditLog.length>3000) c.creditLog.length=3000;
+}
+function rule(id){ const r=C().creditRules.find(x=>x.id===id); return r && r.on ? r : null; }
+function ruleFire(s, id, key){
+  const r=rule(id); if(!r) return;
+  if(key){ s.awards=s.awards||{}; if(s.awards[id]===key) return; s.awards[id]=key; }
+  addCredit(s, r.pts, '자동: '+RULE_TEXT[id](r));
+}
+const monthKey = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+function prevMonth(k){ let [y,m]=k.split('-').map(Number); m--; if(m<1){m=12;y--;} return `${y}-${pad(m)}`; }
+function saveStreakCheck(s){
+  const r=rule('save_streak'); if(!r || r.n<1) return;
+  const k=monthKey(); s.saveMonths=s.saveMonths||[];
+  if(!s.saveMonths.includes(k)){ s.saveMonths.push(k); if(s.saveMonths.length>36) s.saveMonths.shift(); }
+  let n=0, cur=k; while(s.saveMonths.includes(cur)){ n++; cur=prevMonth(cur); }
+  if(n>0 && n % r.n===0) ruleFire(s,'save_streak',k);
+}
+function creditSweep(){            // 세금 체납 같은 '시간이 지나야' 알 수 있는 규칙 검사
+  const c=C(); if(!c) return false; let changed=false;
+  const r=rule('tax_late');
+  if(r){ const lim=Date.now()-r.n*864e5;
+    c.taxBills.forEach(b=>{ if(!b.paid && !b.late && new Date(b.date).getTime()<lim){ const s=stuById(b.sid); if(s){ b.late=true; addCredit(s, r.pts, `자동: ${RULE_TEXT.tax_late(r)} (${b.title})`); changed=true; } } }); }
+  if(seatSweep()) changed=true;
+  return changed;
+}
 function addTx(s, amount, type, memo){
   const c=C();
+  const wasPlus = s.balance>=0;
   s.balance += amount;
+  if(wasPlus && s.balance<0) ruleFire(s,'minus_bal');
   c.tx.unshift({id:uid(), sid:s.id, amount, type, memo:memo||'', date:now(), bal:s.balance});
   if(c.tx.length>6000) c.tx.length=6000;
 }
@@ -535,7 +630,8 @@ function allApps(){
     {k:'news', e:'📰', t:n.news+'뉴스', col:'#FFDCE3', fn:appNews, rename:'news'},
     {k:'stock', e:'📈', t:n.securities+'증권', col:'#E3F5CC', fn:appStock, feat:'stock', rename:'securities'},
     {k:'realty', e:'🏠', t:'국토교통부', col:'#FFE3C2', fn:appRealty, feat:'realty'},
-    {k:'ins', e:'🏥', t:'국민건강보험', col:'#D3F0EF', fn:appIns, feat:'insurance'},
+    {k:'credit', e:'💳', t:'신용평가원', col:'#FCE7C8', fn:appCredit},
+    {k:'ins', e:'🏥', t:'국민건강보험', col:'#D3F0EF', fn:appIns},
     {k:'students', e:'👥', t:'학생 관리', col:'#F4E2FB', fn:appStudents, tOnly:1},
     {k:'stats', e:'📊', t:'정부 예산·통계', col:'#FDE6D3', fn:appStats, tOnly:1},
     {k:'features', e:'➕', t:'기능 추가하기', col:'#E6F0D8', fn:appFeatures, tOnly:1},
@@ -548,10 +644,11 @@ function badges(){
   if(T()){
     b.jobs = c.apps.filter(a=>a.status==='pending').length;
     b.mart = c.orders.filter(o=>!o.done).length;
-    b.realty = c.seatReqs.filter(r=>r.status==='pending').length;
+    b.realty = c.seatReqs.filter(r=>r.status==='pending' && r.teacherOk===null).length;
     b.ins = c.ins.claims.filter(r=>r.status==='pending').length;
   } else if(S.role==='student'){
     b.tax = c.taxBills.filter(x=>x.sid===S.sid && !x.paid).length;
+    if(c.features.realty) b.realty = c.seatReqs.filter(r=>r.status==='pending' && r.owner===S.sid && r.ownerOk===null).length;
   }
   return b;
 }
@@ -580,6 +677,7 @@ function render(){
   }
   if(S.screen!=='code' && !C()) S=freshS();
   if((S.screen==='home'||S.screen==='app') && S.role==='student' && !me()) S=freshS();
+  if((S.screen==='home'||S.screen==='app') && C() && S.role==='teacher' && !S.preview && (!SYNC.on || SYNC.ready)){ try{ if(creditSweep()) save(); }catch(e){ console.error(e); } }
   applyPrefs();
   let h='';
   switch(S.screen){
@@ -734,7 +832,7 @@ function vApp(){
    ========================================================= */
 function appBank(){
   if(T()) return tabs([['pay','💸 월급 지급'],['acc','👛 학생 계좌'],['int','🐷 예금 이자']]) + ({pay:bankPay, acc:bankAcc, int:bankInt}[S.tab])();
-  return tabs([['acc','📒 내 통장'],['slip','🧾 월급 명세서'],['save','🐷 저축·예금'],['credit','💳 신용 등급']]) + ({acc:bankMine, slip:bankSlip, save:bankSave, credit:bankCredit}[S.tab])(me());
+  return tabs([['acc','📒 내 통장'],['slip','🧾 월급 명세서'],['save','🐷 저축·예금']]) + ({acc:bankMine, slip:bankSlip, save:bankSave}[S.tab])(me());
 }
 function txList(list, showName){
   if(!list.length) return `<p class="empty">아직 거래 내역이 없어요</p>`;
@@ -742,18 +840,34 @@ function txList(list, showName){
   ${list.map(t=>`<tr><td class="nowrap sub">${fdate(t.date)}</td>${showName?`<td>${esc(stuName(t.sid))}</td>`:''}<td><span class="chip" style="margin:0 6px 0 0">${esc(t.type)}</span>${esc(t.memo)}</td>
   <td class="r nowrap ${t.amount>=0?'plus':'minus'}">${signed(t.amount)}</td><td class="r nowrap sub">${won(t.bal)}</td></tr>`).join('')}</table></div>`;
 }
+function rentOf(sid){
+  const c=C(); if(!c.features.realty) return 0;
+  return c.seatReqs.filter(r=>r.sid===sid && r.status==='active').reduce((a,r)=>a+(r.rent||0),0);
+}
+function insPlanOf(sid){ const c=C(); return c.ins.plans.find(p=>p.id===c.ins.members[sid]) || basicPlan(c); }
+function payCalc(s, royalty, allowance){
+  const c=C(), j=jobOf(s);
+  const salary=j?j.salary:0, rate=j?j.taxRate:0;
+  royalty=Math.max(0, royalty||0); allowance=Math.max(0, allowance||0);
+  const income=salary+royalty+allowance;
+  const tax=Math.round(income*rate/100), rent=rentOf(s.id), electric=c.fees.electric||0, meal=c.fees.meal||0;
+  const plan=insPlanOf(s.id), ins=plan?plan.premium:0;
+  return {job:j?j.name:'무직', salary, royalty, allowance, rate, tax, rent, electric, ins, meal, net:income-tax-rent-electric-ins-meal};
+}
+const PAY_ROWS = [['salary','월급',1],['royalty','저작권료',1],['allowance','국회의원 수당',1],['tax','세금',-1],['rent','자리임대료',-1],['electric','전기요금',-1],['ins','건강보험료',-1],['meal','급식비',-1]];
+function payKv(p){
+  return PAY_ROWS.map(([k,l,sg])=>`<div class="kv"><span>${l}${k==='tax'?` (${p.rate}%)`:''}</span><b class="${sg<0&&p[k]?'minus':''}">${sg<0&&p[k]?'−':''}${won(p[k]||0)}</b></div>`).join('')
+    + `<div class="kv"><span><b>실수령</b></span><b class="${p.net>=0?'plus':'minus'} big">${won(p.net)}</b></div>`;
+}
 function bankMine(s){
-  const c=C(), j=jobOf(s), tax=j?Math.round(j.salary*j.taxRate/100):0;
+  const c=C(), j=jobOf(s), p=payCalc(s, 0, s.allowance||0);
   const unpaid=c.taxBills.filter(b=>b.sid===s.id && !b.paid), uSum=unpaid.reduce((a,b)=>a+b.amount,0);
   return `<div class="two">
     <div class="card hero"><div class="sub">현재 잔액</div><div class="money-big">${won(s.balance)}</div>
       <div class="sub">예금 통장 ${won(s.savings)} · 신용 ${grade(s)}등급</div>
       ${unpaid.length?`<div class="alert">🧾 내지 않은 세금 ${unpaid.length}건 (${won(uSum)}) <button class="btn sm" onclick="openApp('tax','bill')">납부하기</button></div>`:''}</div>
-    <div class="card"><h3>💼 내 직업과 세금</h3>
-      ${j?`<div class="kv"><span>직업</span><b>${j.emoji} ${esc(j.name)}</b></div><div class="kv"><span>월급</span><b>${won(j.salary)}</b></div>
-      <div class="kv"><span>세율</span><b>${j.taxRate}%</b></div><div class="kv"><span>월급마다 내야 할 세금</span><b class="minus">${won(tax)}</b></div>
-      <div class="kv"><span>실제로 받는 돈</span><b class="plus">${won(j.salary-tax)}</b></div>`
-      :`<p class="empty">아직 직업이 없어요.<br>직업·자격증 협회에서 지원해 보세요!</p>`}
+    <div class="card"><h3>💼 다음 월급 예상 (${j?esc(j.emoji+' '+j.name):'직업 없음'})</h3>
+      ${payKv(p)}<p class="sub">저작권료는 선생님이 월급날에 정해요.</p>
     </div></div>
     <div class="card mt"><h3>📜 입출금 내역</h3>${txList(c.tx.filter(t=>t.sid===s.id).slice(0,80))}</div>`;
 }
@@ -761,13 +875,12 @@ function bankSlip(s){
   const list=C().payslips.filter(p=>p.sid===s.id);
   if(!list.length) return `<div class="card empty">아직 받은 월급이 없어요 🌱</div>`;
   return `<div class="grid2">${list.slice(0,40).map(p=>`<div class="card"><div class="row between"><b class="jua">🧾 ${esc(p.memo)}</b><span class="sub">${fday(p.date)}</span></div>
-    <div class="kv"><span>직업</span><b>${esc(p.job)}</b></div><div class="kv"><span>월급</span><b>${won(p.gross)}</b></div>
-    <div class="kv"><span>세금 (${p.rate??''}%)</span><b class="minus">−${won(p.tax)}</b></div><div class="kv"><span>실수령액</span><b class="plus">${won(p.net)}</b></div></div>`).join('')}</div>`;
+    <div class="kv"><span>직업</span><b>${esc(p.job)}</b></div>${payKv(Object.assign({salary:p.gross, royalty:0, allowance:0, rent:0, electric:0, ins:0, meal:0}, p))}</div>`).join('')}</div>`;
 }
 function bankSave(s){
-  const c=C();
+  const c=C(), r=c.creditRules.find(x=>x.id==='save_streak');
   return `<div class="two"><div class="card hero"><div class="sub">🐷 내 예금 통장</div><div class="money-big">${won(s.savings)}</div>
-    <p class="sub">예금에 넣어 두면 선생님이 이자를 줄 때마다 <b>${c.savingsRate}%</b>씩 늘어나요!<br>저금을 하면 신용 점수도 조금 올라가요.</p></div>
+    <p class="sub">예금에 넣어 두면 선생님이 이자를 줄 때마다 <b>${c.savingsRate}%</b>씩 늘어나요!${r&&r.on?`<br>💳 ${r.n}달 연속 적금하면 신용 점수 <b>+${r.pts}점</b>!`:''}</p></div>
     <div class="card"><h3>저금하기 · 찾기</h3><div class="sub">지금 통장 잔액: ${won(s.balance)}</div>
       <label class="f">금액</label><input id="saveAmt" type="number" min="1" placeholder="얼마를 옮길까요?">
       <div class="row mt"><button class="btn mint grow" onclick="doSave(1)">🐷 예금에 넣기</button><button class="btn sub grow" onclick="doSave(-1)">💰 예금에서 찾기</button></div></div></div>`;
@@ -776,47 +889,76 @@ function doSave(dir){
   if(guard()) return;
   const s=me(), a=num(val('saveAmt'));
   if(a<=0) return toast('금액을 입력하세요');
-  if(dir>0){ if(s.balance<a) return toast('통장 잔액이 부족해요 😢'); addTx(s,-a,'저축','예금 통장으로 옮김'); s.savings+=a; addCredit(s,2); toast('예금에 넣었어요 🐷'); }
-  else { if(s.savings<a) return toast('예금이 부족해요'); s.savings-=a; addTx(s,a,'예금 인출','예금 통장에서 찾음'); toast('예금에서 찾았어요 💰'); }
+  if(dir>0){ if(s.balance<a) return toast('통장 잔액이 부족해요 😢'); addTx(s,-a,'저축','예금 통장으로 옮김'); s.savings+=a; saveStreakCheck(s); toast('예금에 넣었어요 🐷'); }
+  else { if(s.savings<a) return toast('예금이 부족해요'); s.savings-=a; addTx(s,a,'예금 인출','예금 통장에서 찾음'); ruleFire(s,'save_break'); toast('예금에서 찾았어요 💰'); }
   save(); render();
 }
-function bankCredit(s){
-  const g=grade(s);
-  return `<div class="card hero center"><div class="sub">나의 신용 등급</div><div class="money-big">${g}등급</div><div class="sub">신용 점수 ${s.credit}점 / 1000점</div>
-    <div class="grade-boxes">${[1,2,3,4,5,6,7,8,9,10].map(i=>`<div class="gb ${i===g?'on':''}">${i}</div>`).join('')}</div>
-    <div class="sub">1등급이 가장 좋아요 ✨</div></div>
-    <div class="card"><h3>💡 신용 점수를 올리는 방법</h3>
-    <div class="item"><span class="emo">🧾</span><div class="grow">세금 고지서를 제때 내요 <span class="plus">(+5점)</span></div></div>
-    <div class="item"><span class="emo">🐷</span><div class="grow">꾸준히 저금해요 <span class="plus">(+2점)</span></div></div>
-    <div class="item"><span class="emo">🤝</span><div class="grow">맡은 일을 성실히 하고 약속을 지켜요 (선생님이 올려 줘요)</div></div></div>`;
-}
 function bankPay(){
-  const c=C(), list=sorted();
-  let tot=0, ttax=0;
-  const rows=list.map(s=>{ const j=jobOf(s); if(!j) return `<tr><td><input type="checkbox" disabled></td><td>${s.num}</td><td>${esc(s.name)}</td><td class="sub" colspan="4">직업 없음</td></tr>`;
-    const tax=Math.round(j.salary*j.taxRate/100); tot+=j.salary-tax; ttax+=tax;
-    return `<tr><td><input type="checkbox" id="pay_${s.id}" checked></td><td>${s.num}</td><td>${esc(s.name)}</td><td>${j.emoji} ${esc(j.name)}</td><td class="r">${won(j.salary)}</td><td class="r minus">${won(tax)}</td><td class="r plus">${won(j.salary-tax)}</td></tr>`; }).join('');
+  const c=C(), list=sorted(), bp=basicPlan(c);
+  let initTot=0;
+  const rows=list.map(s=>{ const j=jobOf(s), p=payCalc(s, s.royalty||0, s.allowance||0); if(j) initTot+=p.net;
+    return `<tr><td><input type="checkbox" id="pay_${s.id}" ${j?'checked':''} onchange="payTotals()"></td><td>${s.num}</td><td class="nowrap">${esc(s.name)}</td><td class="nowrap">${j?esc(j.emoji+' '+j.name):'<span class="sub">무직</span>'}</td>
+      <td class="r">${won(p.salary)}</td>
+      <td><input class="sm num" id="roy_${s.id}" type="number" min="0" value="${p.royalty}" oninput="payRow('${s.id}')"></td>
+      <td><input class="sm num" id="alw_${s.id}" type="number" min="0" value="${p.allowance}" oninput="payRow('${s.id}')"></td>
+      <td class="r nowrap minus" id="ptax_${s.id}">${p.rate}% (${won(p.tax)})</td><td class="r minus">${won(p.rent)}</td><td class="r minus">${won(p.electric)}</td><td class="r minus">${won(p.ins)}</td><td class="r minus">${won(p.meal)}</td>
+      <td class="r jua" id="pnet_${s.id}"><span class="${p.net>=0?'plus':'minus'}">${won(p.net)}</span></td></tr>`; }).join('');
   const d=new Date();
-  return `<div class="card"><h3>💸 월급 지급하기</h3><p class="sub">체크된 학생에게 월급을 주고, 직업별 세율만큼 세금을 떼어 정부 예산으로 보내요.</p>
-    <div class="row"><input id="payMemo" class="grow" value="${d.getMonth()+1}월 ${Math.ceil(d.getDate()/7)}주차 월급"><button class="btn" onclick="paySalary()">💸 월급 지급</button></div>
-    <div class="tbl-wrap mt"><table class="t"><tr><th><input type="checkbox" checked onchange="document.querySelectorAll('[id^=pay_]').forEach(x=>x.checked=this.checked)"></th><th>번호</th><th>이름</th><th>직업</th><th class="r">월급</th><th class="r">세금</th><th class="r">실수령</th></tr>${rows||'<tr><td colspan="7" class="empty">학생이 없어요</td></tr>'}
-    <tr><td colspan="5" class="jua">합계</td><td class="r minus jua">${won(ttax)}</td><td class="r plus jua">${won(tot)}</td></tr></table></div></div>
+  return `<div class="card"><h3>🧾 매달 빠지는 돈 (모든 학생 같음)</h3>
+    <div class="row"><div class="grow"><label class="f">⚡ 전기요금</label><input id="feeE" type="number" min="0" value="${c.fees.electric}"></div>
+    <div class="grow"><label class="f">🍚 급식비</label><input id="feeM" type="number" min="0" value="${c.fees.meal}"></div>
+    <div class="grow"><label class="f">🏥 기본 건강보험료</label><input id="feeI" type="number" min="0" value="${bp?bp.premium:0}"></div>
+    <button class="btn sub" style="align-self:flex-end" onclick="saveFees()">저장</button></div>
+    <p class="sub">세금은 (월급+저작권료+국회의원 수당) × 직업별 세율이에요. 자리임대료는 국토교통부에서 자리를 빌린 학생만 내요.</p></div>
+  <div class="card"><h3>💸 월급 지급하기</h3><p class="sub">체크된 학생에게 월급을 주고 세금·공과금을 떼어요. 저작권료는 이번 한 번만, 국회의원 수당은 다음에도 그대로 기억해요.</p>
+    <div class="row"><input id="payMemo" class="grow" value="${d.getMonth()+1}월 월급"><button class="btn" onclick="paySalary()">💸 월급 지급</button></div>
+    <div class="tbl-wrap mt"><table class="t"><tr><th><input type="checkbox" onchange="document.querySelectorAll('[id^=pay_]').forEach(x=>x.checked=this.checked);payTotals()"></th><th>번호</th><th>이름</th><th>직업</th><th class="r">월급</th><th>저작권료</th><th>국회의원 수당</th><th class="r">세금(%)</th><th class="r">자리임대료</th><th class="r">전기요금</th><th class="r">건강보험료</th><th class="r">급식비</th><th class="r">실수령</th></tr>${rows||'<tr><td colspan="13" class="empty">학생이 없어요</td></tr>'}
+    <tr><td colspan="12" class="jua">체크된 학생 실수령 합계</td><td class="r jua" id="payTot">${won(initTot)}</td></tr></table></div></div>
     <div class="card"><h3>📜 최근 월급 지급 기록</h3>${c.payslips.length?`<div class="tbl-wrap"><table class="t"><tr><th>날짜</th><th>이름</th><th>내용</th><th class="r">실수령</th></tr>${c.payslips.slice(0,30).map(p=>`<tr><td class="sub">${fdate(p.date)}</td><td>${esc(stuName(p.sid))}</td><td>${esc(p.memo)}</td><td class="r">${won(p.net)}</td></tr>`).join('')}</table></div>`:'<p class="empty">아직 기록이 없어요</p>'}</div>`;
+}
+function payInputs(sid){ return [num(val('roy_'+sid)), num(val('alw_'+sid))]; }
+function payRow(sid){
+  const s=stuById(sid); if(!s) return; const [r,a]=payInputs(sid), p=payCalc(s,r,a);
+  $('ptax_'+sid).textContent=`${p.rate}% (${won(p.tax)})`;
+  $('pnet_'+sid).innerHTML=`<span class="${p.net>=0?'plus':'minus'}">${won(p.net)}</span>`;
+  payTotals();
+}
+function payTotals(){
+  const e=$('payTot'); if(!e) return; let t=0;
+  C().students.forEach(s=>{ const cb=$('pay_'+s.id); if(cb&&cb.checked){ const [r,a]=payInputs(s.id); t+=payCalc(s,r,a).net; } });
+  e.textContent=won(t);
+}
+function saveFees(){
+  if(guard()) return;
+  const c=C(), bp=basicPlan(c);
+  c.fees.electric=Math.max(0,num(val('feeE'))); c.fees.meal=Math.max(0,num(val('feeM')));
+  if(bp) bp.premium=Math.max(0,num(val('feeI')));
+  save(); render(); toast('저장했어요 ✅');
 }
 function paySalary(){
   if(guard()) return;
-  const c=C(), memo=val('payMemo')||'월급'; let cnt=0, taxSum=0;
-  c.students.forEach(s=>{
-    const cb=$('pay_'+s.id); if(!cb||!cb.checked) return;
-    const j=jobOf(s); if(!j) return;
-    const tax=Math.round(j.salary*j.taxRate/100);
-    addTx(s, j.salary, '월급', `${memo} (${j.name})`);
-    if(tax>0) addTx(s, -tax, '세금', `소득세 ${j.taxRate}%`);
-    c.payslips.unshift({id:uid(), sid:s.id, date:now(), memo, job:j.name, gross:j.salary, rate:j.taxRate, tax, net:j.salary-tax});
-    taxSum+=tax; cnt++;
+  const c=C(), memo=val('payMemo')||'월급'; let cnt=0;
+  const sum={tax:0, rent:0, electric:0, meal:0, ins:0};
+  const picked=c.students.filter(s=>{ const cb=$('pay_'+s.id); return cb&&cb.checked; });
+  if(!picked.length) return toast('월급을 받을 학생을 체크하세요');
+  picked.forEach(s=>{
+    const [roy,alw]=payInputs(s.id), p=payCalc(s,roy,alw);
+    const income=p.salary+p.royalty+p.allowance, ded=income-p.net;
+    if(income) addTx(s, income, '월급', `${memo} (${p.job}${p.royalty?` · 저작권료 ${p.royalty}`:''}${p.allowance?` · 수당 ${p.allowance}`:''})`);
+    if(ded) addTx(s, -ded, '세금·공과금', [['세금',p.tax],['자리',p.rent],['전기',p.electric],['보험',p.ins],['급식',p.meal]].filter(x=>x[1]).map(x=>x[0]+' '+x[1]).join(' · '));
+    c.payslips.unshift(Object.assign({id:uid(), sid:s.id, date:now(), memo, gross:income}, p));
+    for(const k in sum) sum[k]+=p[k];
+    s.allowance=p.allowance; s.royalty=0;
+    if(jobOf(s)){ s.payStreak=(s.payStreak||0)+1; const r=rule('pay_streak'); if(r && r.n>0 && s.payStreak%r.n===0) ruleFire(s,'pay_streak','p'+s.payStreak); }
+    else s.payStreak=0;
+    cnt++;
   });
-  if(!cnt) return toast('월급을 받을 학생이 없어요');
-  if(taxSum) budgetAdd(taxSum, `소득세 (${memo})`);
+  if(c.payslips.length>3000) c.payslips.length=3000;
+  if(sum.tax) budgetAdd(sum.tax, `소득세 (${memo})`);
+  if(sum.rent) budgetAdd(sum.rent, `자리 임대료 (${memo})`);
+  if(sum.electric) budgetAdd(sum.electric, `전기요금 (${memo})`);
+  if(sum.meal) budgetAdd(sum.meal, `급식비 (${memo})`);
+  if(sum.ins) c.ins.fund += sum.ins;
   save(); render(); toast(`${cnt}명에게 월급을 줬어요 💸`);
 }
 function bankAcc(){
@@ -960,7 +1102,7 @@ function certsList(){
 }
 function applyCert(id){ if(guard()) return; C().apps.unshift({id:uid(), sid:S.sid, kind:'cert', target:id, status:'pending', date:now()}); save(); render(); toast('시험을 신청했어요! 선생님이 확인할 거예요 ✏️'); }
 function appLabel(a){ const t=a.kind==='job'?jobById(a.target):certById(a.target); return (a.kind==='job'?'💼 직업 ':'📜 자격증 ')+(t?esc(t.name):'(삭제됨)'); }
-const STATUS = {pending:'⏳ 심사 중', approved:'✅ 승인', rejected:'❌ 거절'};
+const STATUS = {pending:'⏳ 기다리는 중', approved:'✅ 승인', rejected:'❌ 거절', active:'🔑 사용 중', ended:'🏁 끝남', cancelled:'↩ 취소'};
 function jobsMine(){
   const list=C().apps.filter(a=>a.sid===S.sid), s=me();
   return `<div class="card"><h3>🏅 내 자격증</h3>${s.certs.length?s.certs.map(id=>{const x=certById(id);return x?`<span class="chip mint">${esc(x.emoji)} ${esc(x.name)}</span>`:''}).join(''):'<p class="sub">아직 자격증이 없어요</p>'}</div>
@@ -1058,7 +1200,7 @@ function payBill(id){
   if(guard()) return;
   const b=C().taxBills.find(x=>x.id===id), s=me();
   if(s.balance<b.amount) return toast('잔액이 부족해요 😢');
-  ask(`<b>${esc(b.title)}</b> ${won(b.amount)}을 낼까요?`, ()=>{ addTx(s,-b.amount,'세금 납부',b.title); budgetAdd(b.amount,`${b.title} (${s.name})`); b.paid=true; b.paidDate=now(); addCredit(s,5); save(); render(); toast('세금을 냈어요! 신용 점수 +5 ✨'); }, '납부하기');
+  ask(`<b>${esc(b.title)}</b> ${won(b.amount)}을 낼까요?`, ()=>{ addTx(s,-b.amount,'세금 납부',b.title); budgetAdd(b.amount,`${b.title} (${s.name})`); b.paid=true; b.paidDate=now(); const r=rule('tax_pay'); if(r && !b.late) ruleFire(s,'tax_pay'); save(); render(); toast(r && !b.late ? `세금을 냈어요! 신용 점수 ${r.pts>0?'+':''}${r.pts} ✨` : '세금을 냈어요! 고마워요 💛'); }, '납부하기');
 }
 function taxHist(){
   const c=C();
@@ -1258,8 +1400,10 @@ function stockBroker(){
 function brokerLogin(){
   if(guard()) return;
   const code=val('bkCode');
-  if(C().brokerCodes.some(b=>b.code===code)){ S.broker=true; render(); toast('증권사 직원으로 들어왔어요 🏢'); }
-  else toast('비밀번호가 틀렸어요');
+  const me_=me(), b=C().brokerCodes.find(x=>x.code===code);
+  if(!b || (b.sid ? b.sid!==me_.id : false)) return toast('비밀번호가 틀렸어요');
+  if(!isBroker(me_)) return toast('증권사 직원만 들어갈 수 있어요');
+  S.broker=true; render(); toast('증권사 직원으로 들어왔어요 🏢');
 }
 function stockEditList(admin){
   const c=C();
@@ -1296,16 +1440,25 @@ function delStock(id){
     c.stocks=c.stocks.filter(x=>x.id!==id); save(); render();
   }, '삭제');
 }
+const isBroker = s => { const j=jobOf(s); return !!j && j.special==='broker'; };
 function stockCodes(){
-  const c=C();
-  return `<div class="card"><h3>🔑 증권사 비밀번호 만들기</h3><p class="sub">증권사 직원 학생에게 이 비밀번호를 알려주면, 주식 가격을 정하고 정보를 쓸 수 있어요.</p>
-    <div class="row"><input id="bkL" class="grow" placeholder="누구에게 줄까요? (예: 김하늘)"><button class="btn" onclick="addCode()">🎲 만들기</button></div></div>
-    <div class="card">${c.brokerCodes.map(b=>`<div class="item"><span class="emo">🔑</span><div class="grow"><span class="code-show" style="font-size:1.4rem">${esc(b.code)}</span><div class="meta">${esc(b.label||'이름 없음')} · ${fday(b.date)}</div></div><button class="btn sm danger" onclick="delCode('${b.code}')">삭제</button></div>`).join('')||'<p class="empty">아직 만든 비밀번호가 없어요</p>'}</div>`;
+  const c=C(), brokers=sorted().filter(isBroker);
+  return `<div class="card"><h3>🔑 증권사 비밀번호 만들기</h3><p class="sub">비밀번호는 <b>증권사 직원</b>(직업 특별 권한이 '증권사'인 학생)에게만 줄 수 있어요. 받은 학생만 그 비밀번호로 증권사 직원 화면에 들어갈 수 있어요.</p>
+    ${brokers.length?`<div class="row"><div class="grow"><label class="f">누구에게 줄까요?</label><select id="bkS">${brokers.map(s=>`<option value="${s.id}">${s.num}. ${esc(s.name)} (${esc(jobOf(s).name)})</option>`).join('')}</select></div>
+    <div class="grow"><label class="f">비밀번호 (숫자 4~6자리)</label><div class="row"><input id="bkC" class="grow" inputmode="numeric" maxlength="6" placeholder="예: 2580"><button class="btn sm sub" onclick="$('bkC').value=rand4()" title="자동으로 만들기">🎲</button></div></div></div>
+    <div class="row end mt"><button class="btn" onclick="addCode()">🔑 비밀번호 주기</button></div>`
+    :`<div class="alert">아직 증권사 직원이 없어요. 학생 관리에서 직업을 '증권사 직원'으로 정해 주세요.</div>`}</div>
+    <div class="card"><h3>📋 만든 비밀번호</h3>${c.brokerCodes.map(b=>{ const s=b.sid?stuById(b.sid):null, ok=s&&isBroker(s);
+      return `<div class="item"><span class="emo">🔑</span><div class="grow"><span class="code-show" style="font-size:1.4rem">${esc(b.code)}</span><div class="meta">${s?esc(s.name):esc(b.label||'이름 없음')} · ${fday(b.date)}${b.sid&&!ok?' · ⚠️ 지금은 증권사 직원이 아니라 쓸 수 없어요':''}</div></div><button class="btn sm danger" onclick="delCode('${esc(b.code)}')">삭제</button></div>`; }).join('')||'<p class="empty">아직 만든 비밀번호가 없어요</p>'}</div>`;
 }
 function addCode(){
   if(guard()) return;
-  const c=C(); let code; do{ code=rand4(); }while(c.brokerCodes.some(b=>b.code===code));
-  c.brokerCodes.push({code, label:val('bkL'), date:now()}); save(); render(); toast(`비밀번호 ${code}를 만들었어요`);
+  const c=C(), sid=val('bkS'), code=val('bkC'), s=stuById(sid);
+  if(!s || !isBroker(s)) return toast('증권사 직원만 고를 수 있어요');
+  if(!/^\d{4,6}$/.test(code)) return toast('비밀번호는 숫자 4~6자리로 정해 주세요');
+  if(c.brokerCodes.some(b=>b.code===code)) return toast('이미 쓰고 있는 비밀번호예요');
+  c.brokerCodes=c.brokerCodes.filter(b=>b.sid!==sid);
+  c.brokerCodes.push({code, sid, label:s.name, date:now()}); save(); render(); toast(`${s.name} 학생에게 비밀번호를 줬어요 🔑`);
 }
 function delCode(code){ ask('이 비밀번호를 삭제할까요?', ()=>{ const c=C(); c.brokerCodes=c.brokerCodes.filter(b=>b.code!==code); save(); render(); }, '삭제'); }
 function stockHold(){
@@ -1318,81 +1471,176 @@ function stockHold(){
    🏠 국토교통부 (자리 부동산)
    ========================================================= */
 function genSeats(c){ c.seats=[]; for(let r=1;r<=c.seatCfg.rows;r++) for(let k=1;k<=c.seatCfg.cols;k++) c.seats.push({id:uid(), r, c:k, price:c.seatCfg.price, owner:''}); }
+const todayStr = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+function addDays(str,n){ const d=new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return todayStr(d); }
+const mmdd = str => { const [,m,d]=String(str).split('-'); return `${+m}/${+d}`; };
+const seatOf = sid => C().seats.find(x=>x.owner===sid);
+const seatName = st => st ? `${st.r}-${st.c}` : '(없어진 자리)';
+const OPEN_REQ = ['pending','approved','active'];
+function seatSweep(){
+  const c=C(); if(!c || !c.features.realty) return false;
+  const t=todayStr(); let changed=false;
+  c.seatReqs.forEach(r=>{
+    if(r.status==='approved' && r.to<t){ r.status='ended'; changed=true; return; }
+    if(r.status==='approved' && r.from<=t){
+      const A=c.seats.find(x=>x.id===r.seatId); if(!A){ r.status='cancelled'; changed=true; return; }
+      const B=seatOf(r.sid), O=A.owner;
+      if(O!==r.sid){ A.owner=r.sid; if(B) B.owner=O||''; }
+      r.orig=O||''; r.swapSeat=B?B.id:''; r.status='active'; changed=true;
+    } else if(r.status==='active' && r.to<t){
+      const A=c.seats.find(x=>x.id===r.seatId), B=c.seats.find(x=>x.id===r.swapSeat);
+      if(A && A.owner===r.sid){ A.owner=r.orig||''; if(B && B.owner===r.orig) B.owner=r.sid; }
+      r.status='ended'; changed=true;
+    }
+  });
+  return changed;
+}
 function appRealty(){
-  if(T()){ const p=C().seatReqs.filter(r=>r.status==='pending').length;
-    return tabs([['map','🗺️ 자리 지도'],['req','📮 임대 요청'+(p?` (${p})`:'')],['set','⚙️ 자리 설정']]) + ({map:seatMap, req:realtyReq, set:realtySet}[S.tab])(); }
-  return tabs([['map','🗺️ 자리 보기'],['my','📮 내 요청']]) + (S.tab==='map'?seatMap():realtyMy());
+  const c=C();
+  if(T()){ const p=c.seatReqs.filter(r=>r.status==='pending').length;
+    return tabs([['map','🗺️ 자리 지도'],['req','📮 자리 요청'+(p?` (${p})`:'')],['set','⚙️ 자리 설정·랜덤 배정']]) + ({map:seatMap, req:realtyReq, set:realtySet}[S.tab])(); }
+  const r=c.seatReqs.filter(x=>x.status==='pending' && x.owner===S.sid && x.ownerOk===null).length;
+  return tabs([['map','🗺️ 자리 보기'],['my','📮 내가 보낸 요청'],['recv','📬 받은 요청'+(r?` (${r})`:'')]]) + ({map:seatMap, my:realtyMy, recv:realtyRecv}[S.tab])();
 }
 function seatMap(){
   const c=C(), myId=S.role==='student'?S.sid:'';
-  const pend=new Set(c.seatReqs.filter(r=>r.status==='pending'&&(T()||r.sid===myId)).map(r=>r.seatId));
-  return `<div class="card"><p class="sub">${T()?'자리를 누르면 가격과 주인을 바꿀 수 있어요.':'빈 자리를 누르면 선생님께 임대를 요청할 수 있어요.'} <span class="chip yel">내 자리</span><span class="chip lav">주인 있음</span><span class="chip">빈 자리</span></p>
+  const rented=new Set(c.seatReqs.filter(r=>r.status==='active').map(r=>r.seatId));
+  const pend=new Set(c.seatReqs.filter(r=>r.status==='pending'&&(T()||r.sid===myId||r.owner===myId)).map(r=>r.seatId));
+  const empty=c.seats.filter(x=>!x.owner).length, need=c.students.filter(s=>!seatOf(s.id)).length;
+  return `${T()&&need?`<div class="alert" style="margin:0 0 14px">🪑 자리가 없는 학생이 ${need}명 있어요. <button class="btn sm" onclick="setTab('set')">🎲 랜덤 배정하러 가기</button></div>`:''}
+  <div class="card"><p class="sub">${T()?'자리를 누르면 가격을 바꾸거나 앉을 학생을 직접 정할 수 있어요 (돈은 오가지 않아요).':'친구 자리를 누르면 그 친구와 선생님께 자리를 빌려 달라고 요청할 수 있어요.'}
+    <span class="chip yel">내 자리</span><span class="chip lav">친구 자리</span><span class="chip">빈 자리</span> 🔑 빌린 자리</p>
   <div class="desk">🧑‍🏫 교탁 · 칠판</div>
-  <div class="seatmap" style="grid-template-columns:repeat(${c.seatCfg.cols},1fr)">${c.seats.map(st=>`<button class="seat ${st.owner?(st.owner===myId?'mine':'taken'):''} ${pend.has(st.id)?'req':''}" onclick="seatClick('${st.id}')"><b>${st.r}-${st.c}</b>${st.owner?esc(stuName(st.owner)):won(st.price)}</button>`).join('')}</div></div>`;
+  <div class="seatmap" style="grid-template-columns:repeat(${c.seatCfg.cols},1fr)">${c.seats.map(st=>`<button class="seat ${st.owner?(st.owner===myId?'mine':'taken'):''} ${pend.has(st.id)?'req':''}" onclick="seatClick('${st.id}')"><b>${seatName(st)}${rented.has(st.id)?' 🔑':''}</b>${st.owner?esc(stuName(st.owner)):'빈 자리'}<br><span class="sub">${won(st.price)}</span></button>`).join('')}</div>
+  ${empty&&!T()?'':''}</div>`;
 }
 function seatClick(id){
   const c=C(), st=c.seats.find(x=>x.id===id);
   if(T()) return seatEdit(id);
   if(st.owner===S.sid) return toast('내 자리예요 😊');
-  if(st.owner) return toast('이미 주인이 있는 자리예요');
   if(guard()) return;
-  if(c.seatReqs.some(r=>r.seatId===id&&r.sid===S.sid&&r.status==='pending')) return toast('이미 요청한 자리예요');
-  ask(`<b>${st.r}-${st.c}</b> 자리를 <b>${won(st.price)}</b>에 빌리고 싶다고 선생님께 요청할까요?<br><span class="sub">승인되면 잔액에서 빠져나가요.</span>`, ()=>{
-    c.seatReqs.unshift({id:uid(), sid:S.sid, seatId:id, status:'pending', date:now()}); save(); render(); toast('선생님께 요청했어요 📮');
-  }, '요청하기');
+  if(!seatOf(S.sid)) return toast('아직 내 자리가 없어요. 선생님께 자리를 받은 뒤에 요청할 수 있어요');
+  if(c.seatReqs.some(r=>r.sid===S.sid && OPEN_REQ.includes(r.status))) return toast('이미 진행 중인 자리 요청이 있어요. [내가 보낸 요청]을 확인해 주세요');
+  const t=todayStr(), owner=st.owner?stuName(st.owner):'';
+  modal(`🪑 ${seatName(st)} 자리 빌리기`, `<p>${owner?`<b>${esc(owner)}</b> 친구의 자리예요.`:'지금은 빈 자리예요.'}</p>
+    <div class="row"><div class="grow"><label class="f">언제부터</label><input id="srF" type="date" value="${t}" min="${t}"></div><div class="grow"><label class="f">언제까지</label><input id="srT" type="date" value="${addDays(t,(c.seatCfg.cycle||14)-1)}" min="${t}"></div></div>
+    <div class="kv mt"><span>임대료 (월급날마다)</span><b class="minus">${won(st.price)}</b></div>
+    <p class="sub">${owner?`${esc(owner)} 친구와 선생님이 <b>둘 다</b> 허락하면, 시작하는 날 서로 자리를 바꿔요. 끝나는 날이 지나면 원래 자리로 돌아가요.`:'선생님이 허락하면 시작하는 날 이 자리로 옮겨요.'}</p>`,
+    `<button class="btn" onclick="sendSeatReq('${id}')">📮 요청 보내기</button>`);
+}
+function sendSeatReq(id){
+  if(guard()) return;
+  const c=C(), st=c.seats.find(x=>x.id===id), from=val('srF'), to=val('srT');
+  if(!from||!to) return toast('날짜를 골라 주세요');
+  if(to<from) return toast('끝나는 날이 시작하는 날보다 빨라요');
+  if(from<todayStr()) return toast('지난 날짜는 고를 수 없어요');
+  c.seatReqs.unshift({id:uid(), sid:S.sid, seatId:id, owner:st.owner||'', from, to, rent:st.price,
+    ownerOk: st.owner ? null : true, teacherOk:null, status:'pending', date:now()});
+  save(); closeModal(); render(); toast(st.owner?'친구와 선생님께 요청했어요 📮':'선생님께 요청했어요 📮');
+}
+const OKMARK = v => v===true?'✅':v===false?'❌':'⏳';
+function reqLine(r, extra){
+  const c=C(), st=c.seats.find(x=>x.id===r.seatId);
+  return `<div class="item"><div class="grow"><b>${esc(stuName(r.sid))}</b> → 🪑 ${seatName(st)}${r.owner?` (주인 ${esc(stuName(r.owner))})`:''}
+    <div class="meta">📅 ${mmdd(r.from)} ~ ${mmdd(r.to)} · 월급날마다 ${won(r.rent)} · 주인 ${r.owner?OKMARK(r.ownerOk):'—'} 선생님 ${OKMARK(r.teacherOk)}</div></div>
+    <span class="status st-${r.status}">${STATUS[r.status]||r.status}</span>${extra||''}</div>`;
 }
 function realtyMy(){
-  const c=C(), mine=c.seats.find(x=>x.owner===S.sid), list=c.seatReqs.filter(r=>r.sid===S.sid);
-  return `<div class="card hero"><div class="sub">지금 내 자리</div><div class="money-big">${mine?`${mine.r}-${mine.c}`:'없음'}</div></div>
-  <div class="card">${list.map(r=>{ const st=c.seats.find(x=>x.id===r.seatId); return `<div class="item"><div class="grow">🪑 ${st?`${st.r}-${st.c} (${won(st.price)})`:'(없어진 자리)'}<div class="meta">${fdate(r.date)}</div></div><span class="status st-${r.status}">${STATUS[r.status]}</span>${r.status==='pending'?`<button class="btn sm sub" onclick="cancelSeatReq('${r.id}')">취소</button>`:''}</div>`; }).join('')||'<p class="empty">요청한 기록이 없어요</p>'}</div>`;
+  const c=C(), mine=seatOf(S.sid), list=c.seatReqs.filter(r=>r.sid===S.sid && r.from!==undefined);
+  const act=c.seatReqs.find(r=>r.sid===S.sid && r.status==='active');
+  return `<div class="card hero"><div class="sub">지금 내 자리</div><div class="money-big">${mine?seatName(mine):'없음'}</div>
+    ${act?`<div class="sub">🔑 ${mmdd(act.to)}까지 빌린 자리예요 · 월급날마다 ${won(act.rent)}</div>`:''}</div>
+  <div class="card">${list.map(r=>reqLine(r, r.status==='pending'?`<button class="btn sm sub" onclick="cancelSeatReq('${r.id}')">취소</button>`:'')).join('')||'<p class="empty">보낸 요청이 없어요</p>'}</div>`;
 }
-function cancelSeatReq(id){ if(guard()) return; const c=C(); c.seatReqs=c.seatReqs.filter(r=>r.id!==id); save(); render(); }
+function realtyRecv(){
+  const c=C(), list=c.seatReqs.filter(r=>r.owner===S.sid && r.from!==undefined);
+  return `<div class="card"><h3>📬 내 자리를 빌려 달라는 요청</h3><p class="sub">허락하면 그 기간 동안 친구와 자리를 서로 바꿔요. 선생님도 허락해야 바뀌어요.</p>
+    ${list.map(r=>reqLine(r, r.status==='pending'&&r.ownerOk===null?`<button class="btn sm mint" onclick="decideSeatReq('${r.id}','owner',1)">허락</button><button class="btn sm sub" onclick="decideSeatReq('${r.id}','owner',0)">거절</button>`:'')).join('')||'<p class="empty">받은 요청이 없어요</p>'}</div>`;
+}
+function cancelSeatReq(id){ if(guard()) return; const r=C().seatReqs.find(x=>x.id===id); if(r && r.status==='pending'){ r.status='cancelled'; save(); render(); } }
+function decideSeatReq(id, who, ok){
+  if(guard()) return;
+  const c=C(), r=c.seatReqs.find(x=>x.id===id);
+  if(!r || r.status!=='pending') return;
+  if(who==='owner'){ if(S.role!=='student' || r.owner!==S.sid) return; r.ownerOk=!!ok; }
+  else r.teacherOk=!!ok;
+  if(r.ownerOk===false || r.teacherOk===false) r.status='rejected';
+  else if(r.ownerOk===true && r.teacherOk===true){
+    if(c.seatReqs.some(x=>x!==r && ['approved','active'].includes(x.status) && (x.seatId===r.seatId || x.sid===r.sid || x.sid===r.owner))){
+      r.teacherOk=null; save(); render(); return toast('이 자리나 학생이 이미 다른 자리 계약 중이에요. 그 계약이 끝난 뒤에 승인해 주세요');
+    }
+    r.status='approved'; seatSweep();
+  }
+  save(); render(); toast(ok?'허락했어요 ✅':'거절했어요');
+}
+function realtyReq(){
+  const c=C(), list=c.seatReqs.filter(r=>r.from!==undefined), pend=list.filter(r=>r.status==='pending'), rest=list.filter(r=>r.status!=='pending').slice(0,30);
+  return `<div class="card"><h3>📮 기다리는 요청 (${pend.length})</h3>${pend.map(r=>reqLine(r, r.teacherOk===null?`<button class="btn sm mint" onclick="decideSeatReq('${r.id}','teacher',1)">승인</button><button class="btn sm sub" onclick="decideSeatReq('${r.id}','teacher',0)">거절</button>`:'')).join('')||'<p class="empty">요청이 없어요 🌱</p>'}</div>
+  <div class="card"><h3>📜 계약 기록</h3>${rest.map(r=>reqLine(r, r.status==='active'||r.status==='approved'?`<button class="btn sm sub" onclick="endSeatReq('${r.id}')">계약 끝내기</button>`:'')).join('')||'<p class="empty">기록이 없어요</p>'}</div>`;
+}
+function endSeatReq(id){
+  ask('이 자리 계약을 지금 끝낼까요?<br><span class="sub">빌린 자리였다면 원래 자리로 돌아가요.</span>', ()=>{
+    const c=C(), r=c.seatReqs.find(x=>x.id===id); if(!r) return;
+    if(r.status==='active'){ r.to=addDays(todayStr(),-1); seatSweep(); } else r.status='ended';
+    save(); render();
+  }, '끝내기');
+}
 function seatEdit(id){
   const st=C().seats.find(x=>x.id===id);
-  modal(`🪑 ${st.r}-${st.c} 자리`, `<label class="f">가격</label><input id="seP" type="number" min="0" value="${st.price}">
-    <label class="f">주인</label><select id="seO"><option value="">빈 자리</option>${sorted().map(s=>`<option value="${s.id}" ${s.id===st.owner?'selected':''}>${s.num}. ${esc(s.name)}</option>`).join('')}</select>
-    <p class="sub">여기서 주인을 바꾸면 돈은 오가지 않아요.</p>`, `<button class="btn" onclick="saveSeat('${id}')">저장</button>`);
+  modal(`🪑 ${seatName(st)} 자리`, `<label class="f">임대료 (월급날마다)</label><input id="seP" type="number" min="0" value="${st.price}">
+    <label class="f">이 자리에 앉을 학생</label><select id="seO"><option value="">빈 자리</option>${sorted().map(s=>`<option value="${s.id}" ${s.id===st.owner?'selected':''}>${s.num}. ${esc(s.name)}${seatOf(s.id)&&s.id!==st.owner?` (지금 ${seatName(seatOf(s.id))})`:''}</option>`).join('')}</select>
+    <p class="sub">다른 자리에 있던 학생을 고르면, 지금 이 자리 학생과 서로 자리를 바꿔요. 선생님이 정하는 자리는 돈이 오가지 않아요.</p>`, `<button class="btn" onclick="saveSeat('${id}')">저장</button>`);
 }
 function saveSeat(id){
   if(guard()) return;
   const c=C(), st=c.seats.find(x=>x.id===id), o=val('seO');
   st.price=Math.max(0,num(val('seP')));
-  if(o) c.seats.forEach(x=>{ if(x.owner===o) x.owner=''; });
-  st.owner=o; save(); closeModal(); render();
-}
-function realtyReq(){
-  const c=C(), pend=c.seatReqs.filter(r=>r.status==='pending');
-  return `<div class="card"><h3>📮 자리 임대 요청</h3>${pend.map(r=>{ const st=c.seats.find(x=>x.id===r.seatId), s=stuById(r.sid);
-    return `<div class="item"><div class="grow"><b>${esc(stuName(r.sid))}</b> → 🪑 ${st?`${st.r}-${st.c} (${won(st.price)})`:'(없어진 자리)'}<div class="meta">${fdate(r.date)} · 잔액 ${s?won(s.balance):'-'}${st&&st.owner?' · ⚠️ 이미 주인 있음':''}</div></div>
-    <button class="btn sm mint" onclick="decideSeat('${r.id}',1)">승인</button><button class="btn sm sub" onclick="decideSeat('${r.id}',0)">거절</button></div>`; }).join('')||'<p class="empty">요청이 없어요 🌱</p>'}</div>`;
-}
-function decideSeat(id,ok){
-  if(guard()) return;
-  const c=C(), r=c.seatReqs.find(x=>x.id===id), st=c.seats.find(x=>x.id===r.seatId), s=stuById(r.sid);
-  if(ok){
-    if(!st||!s){ r.status='rejected'; save(); render(); return toast('자리나 학생이 없어요'); }
-    if(st.owner) return toast('이미 주인이 있는 자리예요. 거절하거나 자리를 비워 주세요');
-    if(s.balance<st.price) return toast(`${s.name} 학생의 잔액이 부족해요`);
-    addTx(s,-st.price,'자리 임대료',`${st.r}-${st.c} 자리`); budgetAdd(st.price,`자리 임대료 (${s.name})`);
-    c.seats.forEach(x=>{ if(x.owner===s.id) x.owner=''; }); st.owner=s.id;
-    c.seatReqs.forEach(x=>{ if(x!==r&&x.status==='pending'&&x.seatId===st.id) x.status='rejected'; });
+  if(o!==st.owner){
+    const prev=st.owner, from=o?seatOf(o):null;
+    if(from) from.owner=prev||'';
+    st.owner=o;
   }
-  r.status=ok?'approved':'rejected'; save(); render(); toast(ok?'승인했어요 🏠':'거절했어요');
+  save(); closeModal(); render(); toast('바꿨어요 🪑');
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function randomSeats(){
+  const c=C();
+  if(c.seats.length<c.students.length) return toast(`자리(${c.seats.length}개)가 학생 수(${c.students.length}명)보다 적어요. 줄·칸을 늘려 주세요`);
+  ask('🎲 모든 학생의 자리를 랜덤으로 다시 정할까요?<br><span class="sub">돈은 오가지 않고, 진행 중인 자리 요청과 계약은 모두 끝나요.</span>', ()=>{
+    c.seats.forEach(x=>x.owner='');
+    const seats=shuffle([...c.seats]);
+    shuffle([...c.students]).forEach((s,i)=>{ seats[i].owner=s.id; });
+    c.seatReqs.forEach(r=>{ if(r.status==='pending') r.status='cancelled'; else if(['approved','active'].includes(r.status)) r.status='ended'; });
+    c.seatRound=now(); save(); S.tab='map'; render(); toast('자리를 새로 정했어요! 🎲');
+  }, '랜덤 배정');
 }
 function realtySet(){
-  const g=C().seatCfg;
-  return `<div class="two"><div class="card"><h3>🪑 자리 배치 다시 만들기</h3>
+  const c=C(), g=c.seatCfg, next=c.seatRound?addDays(todayStr(new Date(c.seatRound)), g.cycle||14):'';
+  return `<div class="card hero"><h3>🎲 자리 랜덤 배정</h3>
+    <p class="sub">모든 학생에게 자리를 랜덤으로 무료 배정해요.${c.seatRound?` 마지막 배정: <b>${fday(c.seatRound)}</b> · 다음 예정: <b>${mmdd(next)}</b>${next<=todayStr()?' <span class="minus">(자리 바꿀 때가 됐어요!)</span>':''}`:''}</p>
+    <div class="row"><label class="f" style="margin:0">자리 바꾸는 주기</label><input id="rsCy" class="sm num" type="number" min="1" value="${g.cycle||14}"><span class="sub">일마다</span><button class="btn sm sub" onclick="saveCycle()">저장</button></div>
+    <button class="btn wide mt" onclick="randomSeats()">🎲 지금 랜덤 배정하기</button></div>
+  <div class="two"><div class="card"><h3>🪑 자리 배치 다시 만들기</h3>
     <div class="row"><div class="grow"><label class="f">줄 (세로)</label><input id="rsR" type="number" min="1" max="10" value="${g.rows}"></div><div class="grow"><label class="f">칸 (가로)</label><input id="rsC" type="number" min="1" max="10" value="${g.cols}"></div></div>
-    <label class="f">기본 가격</label><input id="rsP" type="number" min="0" value="${g.price}">
-    <p class="sub">⚠️ 다시 만들면 모든 자리 주인이 비워져요.</p><button class="btn wide" onclick="regenSeats()">다시 만들기</button></div>
-    <div class="card"><h3>💰 가격 한꺼번에 바꾸기</h3><label class="f">모든 자리 가격</label><input id="rsAll" type="number" min="0" value="${g.price}">
+    <label class="f">기본 임대료</label><input id="rsP" type="number" min="0" value="${g.price}">
+    <p class="sub">⚠️ 다시 만들면 자리가 새로 생기고 랜덤으로 다시 배정돼요.</p><button class="btn wide" onclick="regenSeats()">다시 만들기</button></div>
+    <div class="card"><h3>💰 임대료 한꺼번에 바꾸기</h3><label class="f">임대료 (월급날마다)</label><input id="rsAll" type="number" min="0" value="${g.price}">
     <div class="row mt"><button class="btn sub grow" onclick="bulkPrice('all')">모든 자리</button><button class="btn sub grow" onclick="bulkPrice('front')">앞줄만</button></div>
-    <p class="sub">앞줄은 인기가 많으면 더 비싸게 정해 볼 수도 있어요 😉</p></div></div>`;
+    <p class="sub">자리를 빌린 학생만 월급날 임대료를 내요. 랜덤 배정이나 선생님이 정한 자리는 무료예요.</p></div></div>`;
 }
+function saveCycle(){ if(guard()) return; C().seatCfg.cycle=Math.max(1,num(val('rsCy'))); save(); render(); toast('저장했어요'); }
 function regenSeats(){
-  ask('자리를 다시 만들까요? 모든 주인이 비워져요.', ()=>{ const c=C(); c.seatCfg={rows:Math.min(10,Math.max(1,num(val('rsR')))), cols:Math.min(10,Math.max(1,num(val('rsC')))), price:Math.max(0,num(val('rsP')))}; genSeats(c); c.seatReqs=c.seatReqs.filter(r=>r.status!=='pending'); save(); render(); });
+  const rows=Math.min(10,Math.max(1,num(val('rsR')))), cols=Math.min(10,Math.max(1,num(val('rsC')))), price=Math.max(0,num(val('rsP')));
+  const c=C();
+  if(rows*cols<c.students.length) return toast(`자리(${rows*cols}개)가 학생 수(${c.students.length}명)보다 적어요`);
+  ask('자리를 다시 만들까요? 모든 학생의 자리가 랜덤으로 다시 정해져요.', ()=>{
+    c.seatCfg=Object.assign(c.seatCfg,{rows, cols, price}); genSeats(c);
+    const seats=shuffle([...c.seats]); shuffle([...c.students]).forEach((s,i)=>{ seats[i].owner=s.id; });
+    c.seatReqs.forEach(r=>{ if(r.status==='pending') r.status='cancelled'; else if(['approved','active'].includes(r.status)) r.status='ended'; });
+    c.seatRound=now(); save(); S.tab='map'; render(); toast('자리를 새로 만들었어요 🪑');
+  });
 }
-function bulkPrice(which){ if(guard()) return; const c=C(), p=Math.max(0,num(val('rsAll'))); c.seats.forEach(x=>{ if(which==='all'||x.r===1) x.price=p; }); save(); render(); toast('가격을 바꿨어요'); }
+function bulkPrice(which){ if(guard()) return; const c=C(), p=Math.max(0,num(val('rsAll'))); c.seats.forEach(x=>{ if(which==='all'||x.r===1) x.price=p; }); save(); render(); toast('임대료를 바꿨어요'); }
 
 /* =========================================================
    🏥 국민건강보험
@@ -1405,14 +1653,13 @@ function appIns(){
 function insPlans(admin){
   const c=C(), myPlan=S.role==='student'?c.ins.members[S.sid]:'';
   return `${admin?`<div class="card hero row between"><div><div class="sub">보험 기금</div><div class="money-big">${won(c.ins.fund)}</div></div><button class="btn" onclick="planForm('')">➕ 새 보험</button></div>`
-    :`<div class="card hero"><b class="jua big">🏥 보험이란?</b><p>매달 조금씩 보험료를 모아 두었다가, 아프거나 어려운 일이 생긴 친구에게 보험금을 주는 제도예요.</p></div>`}
-  <div class="grid2">${c.ins.plans.map(p=>`<div class="card"><div class="jua big">🩺 ${esc(p.name)}</div><p>${esc(p.desc)}</p>
+    :`<div class="card hero"><b class="jua big">🏥 보험이란?</b><p>매달 조금씩 보험료를 모아 두었다가, 아프거나 어려운 일이 생긴 친구에게 보험금을 주는 제도예요. 모든 학생은 <b>기본 건강보험</b>에 꼭 가입해야 하고, 보험료는 월급날 자동으로 빠져요.</p></div>`}
+  <div class="grid2">${c.ins.plans.map(p=>`<div class="card"><div class="jua big">🩺 ${esc(p.name)} ${p.basic?'<span class="chip pink">필수</span>':''}</div><p>${esc(p.desc)}</p>
     <div class="kv"><span>보험료 (한 번에)</span><b>${won(p.premium)}</b></div><div class="kv"><span>보험금 (청구 1번)</span><b>${won(p.coverage)}</b></div>
-    ${admin?`<div class="kv"><span>가입자</span><b>${Object.values(c.ins.members).filter(x=>x===p.id).length}명</b></div><div class="row end mt"><button class="btn sm sub" onclick="planForm('${p.id}')">수정</button><button class="btn sm danger" onclick="delPlan('${p.id}')">삭제</button></div>`
-     :`<div class="row end mt">${myPlan===p.id?`<span class="chip mint">✅ 가입했어요</span><button class="btn sm sub" onclick="leaveIns()">해지</button>`:`<button class="btn sm" onclick="joinIns('${p.id}')">가입하기</button>`}</div>`}</div>`).join('')||'<div class="card empty">보험 상품이 없어요</div>'}</div>`;
+    ${admin?`<div class="kv"><span>가입자</span><b>${Object.values(c.ins.members).filter(x=>x===p.id).length}명</b></div><div class="row end mt"><button class="btn sm sub" onclick="planForm('${p.id}')">수정</button>${p.basic?'':`<button class="btn sm danger" onclick="delPlan('${p.id}')">삭제</button>`}</div>`
+     :`<div class="row end mt">${myPlan===p.id?`<span class="chip mint">✅ 지금 내 보험</span>`:`<button class="btn sm" onclick="joinIns('${p.id}')">이 보험으로 바꾸기</button>`}</div>`}</div>`).join('')||'<div class="card empty">보험 상품이 없어요</div>'}</div>`;
 }
-function joinIns(pid){ if(guard()) return; C().ins.members[S.sid]=pid; save(); render(); toast('보험에 가입했어요 🏥'); }
-function leaveIns(){ ask('보험을 해지할까요?', ()=>{ delete C().ins.members[S.sid]; save(); render(); }, '해지'); }
+function joinIns(pid){ if(guard()) return; C().ins.members[S.sid]=pid; save(); render(); toast('보험을 바꿨어요 🏥 다음 월급날부터 적용돼요'); }
 function planForm(id){
   const p=id?C().ins.plans.find(x=>x.id===id):{name:'',premium:100,coverage:500,desc:''};
   modal(id?'보험 수정':'새 보험', `<label class="f">이름</label><input id="ipN" value="${esc(p.name)}"><div class="row"><div class="grow"><label class="f">보험료</label><input id="ipP" type="number" value="${p.premium}"></div><div class="grow"><label class="f">보험금</label><input id="ipC" type="number" value="${p.coverage}"></div></div><label class="f">설명</label><textarea id="ipD" rows="2">${esc(p.desc)}</textarea>`, `<button class="btn" onclick="savePlan('${id}')">저장</button>`);
@@ -1424,20 +1671,11 @@ function savePlan(id){
   if(id) Object.assign(c.ins.plans.find(x=>x.id===id), d); else c.ins.plans.push({id:uid(),...d});
   save(); closeModal(); render();
 }
-function delPlan(id){ ask('이 보험을 삭제할까요? 가입자도 해지돼요.', ()=>{ const c=C(); c.ins.plans=c.ins.plans.filter(x=>x.id!==id); for(const k in c.ins.members) if(c.ins.members[k]===id) delete c.ins.members[k]; save(); render(); }, '삭제'); }
+function delPlan(id){ ask('이 보험을 삭제할까요? 가입자는 기본 건강보험으로 옮겨져요.', ()=>{ const c=C(), bp=basicPlan(c); c.ins.plans=c.ins.plans.filter(x=>x.id!==id||x.basic); for(const k in c.ins.members) if(c.ins.members[k]===id) c.ins.members[k]=bp.id; save(); render(); }, '삭제'); }
 function insMembers(){
   const c=C(), list=Object.entries(c.ins.members);
-  return `<div class="card hero row between"><div><div class="sub">보험 기금</div><div class="money-big">${won(c.ins.fund)}</div></div><button class="btn" onclick="collectPremium()">💰 보험료 걷기</button></div>
+  return `<div class="card hero"><div class="sub">보험 기금</div><div class="money-big">${won(c.ins.fund)}</div><div class="sub">보험료는 은행에서 월급을 줄 때 자동으로 걷혀요.</div></div>
   <div class="card"><h3>👥 가입자 (${list.length}명)</h3>${list.map(([sid,pid])=>{ const p=c.ins.plans.find(x=>x.id===pid), s=stuById(sid); return s?`<div class="kv"><span>${esc(s.name)}</span><b>${p?esc(p.name)+' · '+won(p.premium):'-'}</b></div>`:''; }).join('')||'<p class="empty">가입자가 없어요</p>'}</div>`;
-}
-function collectPremium(){
-  if(guard()) return;
-  const c=C(), miss=[]; let n=0;
-  Object.entries(c.ins.members).forEach(([sid,pid])=>{ const s=stuById(sid), p=c.ins.plans.find(x=>x.id===pid); if(!s||!p) return;
-    if(s.balance>=p.premium){ addTx(s,-p.premium,'보험료',p.name); c.ins.fund+=p.premium; n++; } else miss.push(s.name); });
-  save(); render();
-  if(miss.length) modal('💰 보험료 걷기 결과', `<p>${n}명에게 보험료를 걷었어요.</p><p class="minus">잔액이 부족한 학생: ${miss.map(esc).join(', ')}</p>`, '');
-  else toast(`${n}명에게 보험료를 걷었어요 💰`);
 }
 function insClaimStudent(){
   const c=C(), pid=c.ins.members[S.sid], p=c.ins.plans.find(x=>x.id===pid), list=c.ins.claims.filter(x=>x.sid===S.sid);
@@ -1460,16 +1698,104 @@ function decideClaim(id,ok){
 }
 
 /* =========================================================
+   💳 신용평가원
+   ========================================================= */
+function appCredit(){
+  if(T()) return tabs([['list','📋 학생 신용'],['rule','⚙️ 자동 규칙·설정'],['item','✍️ 직접 주는 항목'],['log','📜 기록']]) + ({list:crList, rule:crRules, item:crItems, log:()=>crLog(null)}[S.tab])();
+  return tabs([['mine','💳 내 신용'],['rule','📋 신용 규칙']]) + (S.tab==='mine'?crMine(me()):crRuleView());
+}
+function gradeBoxes(g){ return `<div class="grade-boxes">${[1,2,3,4,5,6,7,8,9,10].map(i=>`<div class="gb ${i===g?'on':''}">${i}</div>`).join('')}</div>`; }
+function crMine(s){
+  return `<div class="card hero center"><div class="sub">나의 신용 등급</div><div class="money-big">${grade(s)}등급</div>
+    <div class="sub">신용 점수 ${s.credit}점 / ${creditMax()}점</div>${gradeBoxes(grade(s))}<div class="sub">1등급이 가장 좋아요 ✨</div></div>` + crLog(s.id);
+}
+function crRuleView(){
+  const c=C(), on=c.creditRules.filter(r=>r.on);
+  const line=(pts,txt,auto)=>`<div class="item"><span class="emo">${pts>0?'⬆️':'⬇️'}</span><div class="grow">${esc(txt)}${auto?' <span class="chip mint" style="margin:0">자동</span>':''}</div><b class="${pts>0?'plus':'minus'} nowrap">${pts>0?'+':''}${pts}점</b></div>`;
+  return `<div class="card"><h3>⬆️ 점수가 오르는 경우</h3>${on.filter(r=>r.pts>0).map(r=>line(r.pts,RULE_TEXT[r.id](r),1)).join('')}${c.creditItems.filter(i=>i.pts>0).map(i=>line(i.pts,i.label)).join('')||''}</div>
+    <div class="card"><h3>⬇️ 점수가 내려가는 경우</h3>${on.filter(r=>r.pts<0).map(r=>line(r.pts,RULE_TEXT[r.id](r),1)).join('')}${c.creditItems.filter(i=>i.pts<0).map(i=>line(i.pts,i.label)).join('')}</div>
+    <p class="sub center">'자동'은 조건을 채우면 저절로 바뀌고, 나머지는 선생님이 직접 정해 줘요. 만점은 ${creditMax()}점이에요.</p>`;
+}
+function crList(){
+  const c=C();
+  return `<div class="card"><h3>🎯 선택한 학생 점수 바꾸기</h3>
+    <div class="row"><select id="crItem" class="grow" onchange="const o=this.selectedOptions[0];if(o.value){$('crAmt').value=o.dataset.p;$('crWhy').value=o.dataset.l;}">
+      <option value="">직접 입력하기</option>${c.creditItems.map(i=>`<option value="${i.id}" data-p="${i.pts}" data-l="${esc(i.label)}">${esc(i.label)} (${i.pts>0?'+':''}${i.pts})</option>`).join('')}</select></div>
+    <div class="row mt"><div style="width:110px"><label class="f">점수 (+/−)</label><input id="crAmt" type="number" value="5"></div><div class="grow"><label class="f">이유</label><input id="crWhy" placeholder="예: 발표를 잘했어요"></div></div>
+    <div class="row end mt"><button class="btn sm sub" onclick="document.querySelectorAll('[id^=crs_]').forEach(x=>x.checked=true)">전체 선택</button><button class="btn" onclick="crApply()">✅ 체크한 학생에게 적용</button></div></div>
+  <div class="card"><div class="tbl-wrap"><table class="t"><tr><th></th><th>번호</th><th>이름</th><th class="r">점수</th><th>등급</th><th>빠른 조정</th></tr>
+    ${sorted().map(s=>`<tr><td><input type="checkbox" id="crs_${s.id}"></td><td>${s.num}</td><td>${esc(s.name)}</td><td class="r">${s.credit} / ${creditMax()}</td><td><b>${grade(s)}등급</b></td>
+      <td class="nowrap"><button class="btn sm danger" onclick="crQuick('${s.id}',-1)">−</button> <button class="btn sm mint" onclick="crQuick('${s.id}',1)">+</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">학생이 없어요</td></tr>'}
+  </table></div><p class="sub">[−][+]는 위의 '점수' 칸 숫자만큼 바로 바꿔요.</p></div>`;
+}
+function crQuick(sid,d){
+  if(guard()) return;
+  const n=Math.abs(num(val('crAmt')))||1, s=stuById(sid);
+  addCredit(s, d*n, val('crWhy')||'선생님이 직접 조정'); save(); render(); toast(`${s.name} ${d>0?'+':'−'}${n}점`);
+}
+function crApply(){
+  if(guard()) return;
+  const n=num(val('crAmt')), why=val('crWhy')||'선생님이 직접 조정';
+  if(!n) return toast('점수를 입력하세요');
+  const list=C().students.filter(s=>{ const e=$('crs_'+s.id); return e&&e.checked; });
+  if(!list.length) return toast('학생을 체크하세요');
+  list.forEach(s=>addCredit(s,n,why)); save(); render(); toast(`${list.length}명에게 적용했어요 💳`);
+}
+function crRules(){
+  const c=C(), cfg=c.creditCfg;
+  const row=r=>`<div class="item"><input type="checkbox" id="ron_${r.id}" ${r.on?'checked':''}><div class="grow">
+      ${r.n?RULE_TEXT[r.id]({n:`<input class="sm num" style="width:62px" id="rn_${r.id}" type="number" min="1" value="${r.n}">`}):RULE_TEXT[r.id](r)}</div>
+      <input class="sm num" style="width:76px" id="rp_${r.id}" type="number" value="${r.pts}"><span class="sub">점</span></div>`;
+  return `<div class="card"><h3>⚙️ 기본 설정</h3>
+    <div class="row"><div class="grow"><label class="f">신용 점수 만점</label><input id="cfMax" type="number" min="10" value="${cfg.max}"></div>
+    <div class="grow"><label class="f">새 학생의 처음 점수</label><input id="cfStart" type="number" min="0" value="${cfg.start}"></div></div>
+    <p class="sub">만점의 10%마다 1등급씩 나뉘어요. (만점 ${cfg.max}점이면 ${Math.round(cfg.max*0.9)}점 넘으면 1등급)</p>
+    <div class="row"><input id="cfAll" class="grow" type="number" min="0" placeholder="모든 학생 점수를 몇 점으로?"><button class="btn sm sub" onclick="crSetAll()">모든 학생 일괄 설정</button></div></div>
+  <div class="card"><h3>🤖 자동 규칙</h3><p class="sub">체크한 규칙만 작동해요. 조건이 채워지면 점수가 저절로 바뀌어요. 숫자는 마음대로 바꿀 수 있어요.</p>
+    <b class="jua">⬆️ 오르는 경우</b>${c.creditRules.filter(r=>r.up).map(row).join('')}
+    <b class="jua" style="display:block;margin-top:12px">⬇️ 내려가는 경우</b>${c.creditRules.filter(r=>!r.up).map(row).join('')}
+    <div class="row end mt"><button class="btn" onclick="crSaveRules()">💾 설정 저장</button></div></div>`;
+}
+function crSaveRules(){
+  if(guard()) return;
+  const c=C(), mx=Math.max(10,num(val('cfMax')));
+  c.creditCfg.max=mx; c.creditCfg.start=Math.min(mx,Math.max(0,num(val('cfStart'))));
+  c.creditRules.forEach(r=>{ r.on=$('ron_'+r.id).checked; r.pts=num(val('rp_'+r.id)); if($('rn_'+r.id)) r.n=Math.max(1,num(val('rn_'+r.id))); });
+  c.students.forEach(s=>{ if(s.credit>mx) s.credit=mx; });
+  save(); render(); toast('저장했어요 ✅');
+}
+function crSetAll(){
+  const v=val('cfAll'); if(v==='') return toast('점수를 입력하세요');
+  const n=Math.min(creditMax(),Math.max(0,num(v)));
+  ask(`모든 학생의 신용 점수를 <b>${n}점</b>으로 바꿀까요?`, ()=>{ C().students.forEach(s=>addCredit(s, n-s.credit, '선생님 일괄 설정')); save(); render(); toast('모두 바꿨어요'); });
+}
+function crItems(){
+  const c=C();
+  return `<div class="card"><h3>✍️ 선생님이 직접 주는 항목</h3><p class="sub">자동으로 알 수 없는 일(발표, 도움, 약속 등)은 여기에 항목을 만들어 두고 [학생 신용] 탭에서 골라 적용해요. 학생들도 목록을 볼 수 있어요.</p>
+    ${c.creditItems.map(i=>`<div class="item"><span class="emo">${i.pts>0?'⬆️':'⬇️'}</span><div class="grow">${esc(i.label)}</div><b class="${i.pts>0?'plus':'minus'}">${i.pts>0?'+':''}${i.pts}점</b><button class="btn sm danger" onclick="crDelItem('${i.id}')">삭제</button></div>`).join('')||'<p class="empty">항목이 없어요</p>'}
+    <div class="row mt"><input id="ciL" class="grow" placeholder="예: 숙제를 빠짐없이 냈어요"><input id="ciP" class="sm num" type="number" value="3"><button class="btn" onclick="crAddItem()">추가</button></div>
+    <p class="sub">내려가는 항목은 점수에 −를 붙여요. (예: −5)</p></div>`;
+}
+function crAddItem(){ if(guard()) return; const l=val('ciL'), p=num(val('ciP')); if(!l||!p) return toast('내용과 점수를 입력하세요'); C().creditItems.push({id:uid(), label:l, pts:p}); save(); render(); }
+function crDelItem(id){ if(guard()) return; const c=C(); c.creditItems=c.creditItems.filter(i=>i.id!==id); save(); render(); }
+function crLog(sid){
+  const list=C().creditLog.filter(l=>!sid||l.sid===sid).slice(0,80);
+  return `<div class="card"><h3>📜 신용 점수 기록</h3>${list.map(l=>`<div class="item"><div class="grow">${sid?'':`<b>${esc(stuName(l.sid))}</b> · `}${esc(l.reason)}<div class="meta">${fdate(l.date)}</div></div><b class="${l.delta>0?'plus':'minus'} nowrap">${l.delta>0?'+':''}${l.delta}점</b></div>`).join('')||'<p class="empty">아직 기록이 없어요</p>'}</div>`;
+}
+
+/* =========================================================
    👥 학생 관리 (선생님)
    ========================================================= */
 function appStudents(){
   const c=C();
   return `<div class="two"><div class="card"><h3>➕ 학생 한 명 추가</h3>
     <div class="row"><div style="width:90px"><label class="f">번호</label><input id="nsN" type="number" value="${(c.students.reduce((m,s)=>Math.max(m,s.num),0))+1}"></div><div class="grow"><label class="f">이름</label><input id="nsName"></div></div>
-    <label class="f">첫 비밀번호 (비우면 자동)</label><input id="nsPin" inputmode="numeric" maxlength="4" placeholder="숫자 4자리">
+    <div class="row"><div class="grow"><label class="f">첫 비밀번호</label><input id="nsPin" inputmode="numeric" maxlength="4" value="1004"></div>
+    <div class="grow"><label class="f">첫 신용 점수</label><input id="nsCr" type="number" min="0" max="${c.creditCfg.max}" value="${c.creditCfg.start}"></div></div>
     <div class="row end mt"><button class="btn" onclick="addStudent()">추가</button></div></div>
     <div class="card"><h3>📋 여러 명 한꺼번에</h3><textarea id="bulk" rows="5" placeholder="한 줄에 한 명씩&#10;1 김하늘&#10;2 이바다"></textarea>
-    <p class="sub">첫 비밀번호는 자동으로 만들어져요.</p><div class="row end"><button class="btn" onclick="bulkAdd()">모두 추가</button></div></div></div>
+    <label class="f">모두의 첫 신용 점수 (만점 ${c.creditCfg.max}점)</label><input id="bulkCr" type="number" min="0" max="${c.creditCfg.max}" value="${c.creditCfg.start}">
+    <p class="sub">🔑 첫 비밀번호는 모두 <b>1004</b>예요. 🏥 기본 건강보험에 자동으로 가입돼요.</p><div class="row end"><button class="btn" onclick="bulkAdd()">모두 추가</button></div></div></div>
   <div class="card mt"><div class="row between"><h3>👥 학생 목록 (${c.students.length}명)</h3><button class="btn sm sub" onclick="showPins()">🔑 비밀번호 목록</button></div>
   <div class="tbl-wrap"><table class="t"><tr><th>번호</th><th>이름</th><th>직업</th><th class="r">잔액</th><th>신용</th><th></th></tr>
   ${sorted().map(s=>`<tr><td>${s.num}</td><td><b>${esc(s.name)}</b></td><td><select class="sm" onchange="setJob('${s.id}',this.value)"><option value="">무직</option>${c.jobs.map(j=>`<option value="${j.id}" ${s.jobId===j.id?'selected':''}>${esc(j.emoji+' '+j.name)}</option>`).join('')}</select></td>
@@ -1478,16 +1804,17 @@ function appStudents(){
 }
 function addStudent(){
   if(guard()) return;
-  const name=val('nsName'), pin=val('nsPin'), n=num(val('nsN'));
+  const name=val('nsName'), pin=val('nsPin')||'1004', n=num(val('nsN'));
   if(!name) return toast('이름을 입력하세요');
-  if(pin && !/^\d{4}$/.test(pin)) return toast('비밀번호는 숫자 4자리예요');
-  const s=newStudent(n,name,pin); C().students.push(s); save(); render();
+  if(!/^\d{4}$/.test(pin)) return toast('비밀번호는 숫자 4자리예요');
+  const s=newStudent(n,name,pin,Math.min(creditMax(),Math.max(0,num(val('nsCr'))))); C().students.push(s); save(); render();
   modal('🎉 학생 추가 완료', `<p><b>${esc(name)}</b> 학생의 첫 비밀번호는</p><div class="code-show center">${s.pin}</div><p class="sub">학생에게 알려주세요. 설정에서 바꿀 수 있어요.</p>`, '');
 }
 function bulkAdd(){
   if(guard()) return;
   const c=C(); let next=c.students.reduce((m,s)=>Math.max(m,s.num),0)+1; const made=[];
-  val('bulk').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^(\d+)[\s.,)]*(.+)$/); const n=m?num(m[1]):next; const name=(m?m[2]:l).trim(); if(!name) return; const s=newStudent(n,name); c.students.push(s); made.push(s); next=Math.max(next,n)+1; });
+  const cr=Math.min(creditMax(),Math.max(0,num(val('bulkCr'))));
+  val('bulk').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^(\d+)[\s.,)]*(.+)$/); const n=m?num(m[1]):next; const name=(m?m[2]:l).trim(); if(!name) return; const s=newStudent(n,name,'1004',cr); c.students.push(s); made.push(s); next=Math.max(next,n)+1; });
   if(!made.length) return toast('이름을 입력하세요');
   save(); render();
   modal(`🎉 ${made.length}명 추가`, pinTable(made), '');
@@ -1498,7 +1825,7 @@ function setJob(sid,jid){ if(guard()) return; stuById(sid).jobId=jid; save(); re
 function editStudent(sid){
   const s=stuById(sid), c=C();
   modal(`✏️ ${esc(s.name)}`, `<div class="row"><div style="width:90px"><label class="f">번호</label><input id="esN" type="number" value="${s.num}"></div><div class="grow"><label class="f">이름</label><input id="esName" value="${esc(s.name)}"></div></div>
-    <label class="f">신용 점수 (0~1000) · 지금 ${grade(s)}등급</label><input id="esCr" type="number" min="0" max="1000" value="${s.credit}">
+    <label class="f">신용 점수 (0~${creditMax()}) · 지금 ${grade(s)}등급</label><input id="esCr" type="number" min="0" max="${creditMax()}" value="${s.credit}">
     <label class="f">자격증</label>${c.certs.map(x=>`<label class="item" style="cursor:pointer;padding:6px 0"><input type="checkbox" id="esc_${x.id}" ${s.certs.includes(x.id)?'checked':''}><span class="grow">${esc(x.emoji+' '+x.name)}</span></label>`).join('')||'<p class="sub">자격증이 없어요</p>'}`,
     `<button class="btn" onclick="saveStudent('${sid}')">저장</button>`);
 }
@@ -1506,18 +1833,18 @@ function saveStudent(sid){
   if(guard()) return;
   const s=stuById(sid), name=val('esName');
   if(!name) return toast('이름을 입력하세요');
-  s.name=name; s.num=num(val('esN')); s.credit=Math.max(0,Math.min(1000,num(val('esCr'))));
+  s.name=name; s.num=num(val('esN')); const cr=Math.max(0,Math.min(creditMax(),num(val('esCr')))); if(cr!==s.credit) addCredit(s, cr-s.credit, '선생님이 직접 수정');
   s.certs=C().certs.filter(x=>{ const e=$('esc_'+x.id); return e&&e.checked; }).map(x=>x.id);
   save(); closeModal(); render(); toast('저장했어요 ✅');
 }
 function resetPin(sid){
-  ask('이 학생의 비밀번호를 새로 만들까요?', ()=>{ const s=stuById(sid); s.pin=rand4(); save(); render();
+  ask('이 학생의 비밀번호를 처음 비밀번호(1004)로 되돌릴까요?', ()=>{ const s=stuById(sid); s.pin='1004'; save(); render();
     modal('🔑 비밀번호 초기화', `<p><b>${esc(s.name)}</b> 학생의 새 비밀번호는</p><div class="code-show center">${s.pin}</div>`, ''); }, '초기화');
 }
 function delStudent(sid){
   ask(`<b>${esc(stuName(sid))}</b> 학생 계정을 삭제할까요?<br><span class="sub">통장, 주식, 자리 정보가 모두 사라져요.</span>`, ()=>{
     const c=C(); c.students=c.students.filter(s=>s.id!==sid); c.seats.forEach(x=>{ if(x.owner===sid) x.owner=''; }); delete c.holdings[sid]; delete c.ins.members[sid];
-    c.apps=c.apps.filter(a=>a.sid!==sid); c.seatReqs=c.seatReqs.filter(r=>r.sid!==sid); c.taxBills=c.taxBills.filter(b=>b.sid!==sid);
+    c.apps=c.apps.filter(a=>a.sid!==sid); c.seatReqs=c.seatReqs.filter(r=>r.sid!==sid && r.owner!==sid); c.taxBills=c.taxBills.filter(b=>b.sid!==sid);
     save(); render(); toast('삭제했어요');
   }, '삭제');
 }
@@ -1560,7 +1887,6 @@ function spend(){ if(guard()) return; const a=num(val('spA')), m=val('spM'); if(
 const FEATS = [
   {k:'stock', e:'📈', t:'주식시장 (증권사)', d:'학생들이 주식을 사고팔며 투자를 배워요. 증권사 직원 학생이 선생님께 받은 비밀번호로 가격을 정해요.'},
   {k:'realty', e:'🏠', t:'국토교통부 (부동산)', d:'교실 자리에 가격을 매기고, 학생들이 원하는 자리를 임대해요. 임대료는 정부 예산이 돼요.'},
-  {k:'insurance', e:'🏥', t:'국민 건강 보험', d:'보험료를 모아 두었다가, 아프거나 어려운 일이 생긴 학생에게 보험금을 줘요.'}
 ];
 function appFeatures(){
   const c=C();
@@ -1573,8 +1899,8 @@ function toggleFeature(k){
   if(c.features[k]) return ask('이 기능을 끌까요?<br><span class="sub">데이터는 남아 있어서 다시 켜면 그대로예요.</span>', ()=>{ c.features[k]=false; save(); render(); }, '끄기');
   c.features[k]=true;
   if(k==='stock' && !c.stocks.length) seedStocks(c);
-  if(k==='realty' && !c.seats.length) genSeats(c);
-  if(k==='insurance' && !c.ins.plans.length) c.ins.plans.push({id:uid(), name:'기본 건강보험', premium:100, coverage:500, desc:'아파서 병원에 가거나 다쳤을 때 보험금을 받아요.'});
+  if(k==='realty'){ if(!c.seats.length || c.seats.length<c.students.length){ c.seatCfg.rows=Math.max(c.seatCfg.rows, Math.ceil(c.students.length/c.seatCfg.cols)); genSeats(c); }
+    if(c.students.some(s=>!seatOf(s.id))){ const free=shuffle(c.seats.filter(x=>!x.owner)); shuffle(c.students.filter(s=>!seatOf(s.id))).forEach((s,i)=>{ if(free[i]) free[i].owner=s.id; }); c.seatRound=now(); } }
   save(); render(); toast('기능을 추가했어요! 홈 화면에 생겼어요 🎉');
 }
 
@@ -1698,8 +2024,15 @@ class Store:
         self.dirty = False
         self.sha = None
         self.err = ""
-        self.token = _secret("GITHUB_TOKEN").strip()
-        self.repo = _secret("GITHUB_REPO").strip().strip("/")
+        invisible = dict.fromkeys(map(ord, "​‌‍﻿ \"'“”‘’<>"), None)
+        self.token = _secret("GITHUB_TOKEN").translate(invisible).strip()
+        repo = _secret("GITHUB_REPO").translate(invisible).strip()
+        for prefix in ("https://", "http://", "github.com/", "www.github.com/"):
+            if repo.lower().startswith(prefix):
+                repo = repo[len(prefix):]
+        if repo.endswith(".git"):
+            repo = repo[:-4]
+        self.repo = repo.strip("/")
         self.path = _secret("GITHUB_PATH", "class_economy_data.json").strip()
         self.api = _secret("GITHUB_API", "https://api.github.com").rstrip("/")
         self.mode = "github" if (self.token and self.repo) else "memory"
@@ -1725,7 +2058,20 @@ class Store:
     def _file_url(self):
         return "%s/repos/%s/contents/%s" % (self.api, self.repo, urllib.parse.quote(self.path))
 
+    def _check_settings(self):
+        if not self.token.isascii() or " " in self.token:
+            return "GITHUB_TOKEN에 한글·띄어쓰기·특수문자가 섞여 있어요. 따옴표 안에 github_pat_로 시작하는 토큰만 넣어 주세요."
+        if not self.token.startswith(("github_pat_", "ghp_")):
+            return "GITHUB_TOKEN이 github_pat_로 시작하지 않아요. 토큰을 다시 복사해 넣어 주세요."
+        if not self.repo.isascii() or self.repo.count("/") != 1:
+            return "GITHUB_REPO는 '아이디/저장소이름' 형태여야 해요. 예: Hye-um/class-economy-data"
+        return ""
+
     def _load(self):
+        bad = self._check_settings()
+        if bad:
+            self.err = bad
+            return False
         try:
             self._http("GET", "%s/repos/%s" % (self.api, self.repo))
         except urllib.error.HTTPError as e:
