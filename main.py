@@ -418,6 +418,13 @@ input[type=range]{border:none;box-shadow:none}
 #scroller::-webkit-scrollbar-track{background:#FFFDF8;border-left:2px solid var(--ol)}
 #scroller::-webkit-scrollbar-thumb{background:var(--accent);border:2px solid var(--ol);border-radius:4px}
 @media (max-width:760px){ .lock-clock{font-size:2.8rem;padding:6px 18px} .appic{box-shadow:2px 2px 0 var(--ol)} }
+
+.feat{display:flex;align-items:center;gap:18px}
+.feat-ic .appic{width:64px;height:64px;border-radius:16px}
+.feat-act{display:flex;flex-direction:column;align-items:center;gap:8px;flex:0 0 auto}
+.item .emo:empty{display:none}
+.pemo{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+@media (max-width:560px){ .feat{flex-wrap:wrap} .feat-act{flex-direction:row;width:100%;justify-content:flex-end} }
 </style>
 </head>
 <body>
@@ -452,9 +459,9 @@ function won(n){ const c=C(); return Math.round(n||0).toLocaleString('ko-KR') + 
 function signed(n){ return (n>0?'+':n<0?'−':'') + won(Math.abs(n)); }
 
 let toastTimer=null;
-function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
+function toast(msg){ const t=$('toast'); t.textContent=(typeof stripEmo==='function'?stripEmo(String(msg)):msg).trim(); t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
 function modal(title, body, actions){
-  $('modal-root').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="win-title" style="background:${titleColor('modal')}"><span class="win-name clip">${title}</span><button class="win-btn close" title="닫기" onclick="closeModal()">${svgI('close')}</button></div><div class="modal-body"><div>${body}</div><div class="acts">${actions||''}<button class="btn sub" onclick="closeModal()">닫기</button></div></div></div></div>`;
+  $('modal-root').innerHTML = tidy(`<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="win-title" style="background:${titleColor('modal')}"><span class="win-name clip">${title}</span><button class="win-btn close" title="닫기" onclick="closeModal()">${svgI('close')}</button></div><div class="modal-body"><div>${body}</div><div class="acts">${actions||''}<button class="btn sub" onclick="closeModal()">닫기</button></div></div></div></div>`);
 }
 function closeModal(){ $('modal-root').innerHTML=''; setTimeout(syncIdle,0); }
 let _cb=null;
@@ -1023,7 +1030,16 @@ function dateText(){ const d=new Date(); return `${d.getMonth()+1}월 ${d.getDat
 const EMO = '(?:\\p{Extended_Pictographic}(?:\\uFE0F|\\u200D\\p{Extended_Pictographic}|[\\u{1F3FB}-\\u{1F3FF}])*)';
 const RX_H3 = new RegExp(`(<h3[^>]*>)\\s*${EMO}+\\s*`, 'gu');
 const RX_BTN = new RegExp(`(<button class="(?:tab|btn)[^"]*"[^>]*>)\\s*${EMO}+\\s+(?=[^\\s<])`, 'gu');
-function tidy(html){ try{ return html.replace(RX_H3,'$1').replace(RX_BTN,'$1'); }catch(e){ return html; } }
+const RX_EMO = new RegExp(`${EMO}+\\s?`, 'gu');
+const stripEmo = t => t.replace(RX_EMO,'');
+function tidy(html){
+  try{
+    const keep=[];
+    html=html.replace(/<span class="pemo">[\s\S]*?<\/span>|<textarea[\s\S]*?<\/textarea>|<div class="body"[^>]*>[^<]*<\/div>/g, m=>{ keep.push(m); return `\u0001${keep.length-1}\u0001`; });
+    html=html.replace(/>([^<]+)</g, (m,t)=>'>'+stripEmo(t)+'<');
+    return html.replace(/\u0001(\d+)\u0001/g, (m,i)=>keep[+i]);
+  }catch(e){ return html; }
+}
 
 /* ---------- 앱 목록 ---------- */
 function allApps(){
@@ -1432,7 +1448,7 @@ function appMart(){
 function martShop(){
   const c=C(), s=me();
   return `<div class="card hero row between"><div><div class="sub">내 잔액</div><div class="money-big">${won(s.balance)}</div></div><div class="sub">물건을 사면 선생님(마트 직원)께 받아가요 🎁</div></div>
-  <div class="grid2">${c.products.map(p=>`<div class="card prod"><div class="emo">${esc(p.emoji)}</div><div class="jua big">${esc(p.name)}</div>
+  <div class="grid2">${c.products.map(p=>`<div class="card prod"><div class="emo"><span class="pemo">${esc(p.emoji)}</span></div><div class="jua big">${esc(p.name)}</div>
     <div class="price">${won(p.price)}</div><div class="sub">남은 수량 ${p.stock}개</div>
     ${p.stock>0?`<div class="stepper"><button onclick="step('q_${p.id}',-1)">−</button><input id="q_${p.id}" type="number" value="1" min="1"><button onclick="step('q_${p.id}',1)">+</button></div>
     <button class="btn" onclick="buy('${p.id}')">🛒 사기</button>`:`<button class="btn" disabled>품절</button>`}</div>`).join('')||'<div class="card empty">아직 상품이 없어요</div>'}</div>`;
@@ -1445,7 +1461,7 @@ function buy(pid){
   if(p.stock<q) return toast('남은 수량이 부족해요');
   const cost=p.price*q;
   if(s.balance<cost) return toast('잔액이 부족해요 😢');
-  ask(`${esc(p.emoji)} <b>${esc(p.name)}</b> ${q}개를 <b>${won(cost)}</b>에 살까요?`, ()=>{
+  ask(`<span class="pemo">${esc(p.emoji)}</span> <b>${esc(p.name)}</b> ${q}개를 <b>${won(cost)}</b>에 살까요?`, ()=>{
     p.stock-=q; addTx(s,-cost,'마트 구매',`${p.name} ×${q}`); budgetAdd(cost,`마트 판매 (${p.name})`);
     c.orders.unshift({id:uid(), sid:s.id, emoji:p.emoji, name:p.name, qty:q, total:cost, date:now(), done:false});
     save(); render(); toast('구매 완료! 선생님께 받아가세요 🎁');
@@ -1454,21 +1470,21 @@ function buy(pid){
 function martMy(){
   const list=C().orders.filter(o=>o.sid===S.sid);
   if(!list.length) return `<div class="card empty">아직 산 물건이 없어요</div>`;
-  return `<div class="card">${list.map(o=>`<div class="item"><span class="emo">${esc(o.emoji)}</span><div class="grow"><b>${esc(o.name)} ×${o.qty}</b><div class="meta">${fdate(o.date)} · ${won(o.total)}</div></div>
+  return `<div class="card">${list.map(o=>`<div class="item"><span class="emo"><span class="pemo">${esc(o.emoji)}</span></span><div class="grow"><b>${esc(o.name)} ×${o.qty}</b><div class="meta">${fdate(o.date)} · ${won(o.total)}</div></div>
     <span class="status ${o.done?'st-approved':'st-pending'}">${o.done?'받았어요':'받을 예정'}</span></div>`).join('')}</div>`;
 }
 function martManage(){
   const c=C();
   return `<div class="row end" style="margin-bottom:12px"><button class="btn" onclick="prodForm('')">➕ 새 상품</button></div>
   <div class="card"><div class="tbl-wrap"><table class="t"><tr><th></th><th>상품</th><th class="r">가격</th><th class="r">재고</th><th></th></tr>
-  ${c.products.map(p=>`<tr><td style="font-size:1.6rem">${esc(p.emoji)}</td><td><b>${esc(p.name)}</b></td><td class="r">${won(p.price)}</td>
+  ${c.products.map(p=>`<tr><td style="font-size:1.6rem"><span class="pemo">${esc(p.emoji)}</span></td><td><b>${esc(p.name)}</b></td><td class="r">${won(p.price)}</td>
    <td class="r"><span class="${p.stock<=3?'minus':''}">${p.stock}개</span></td>
    <td class="nowrap"><button class="btn sm sub" onclick="restock('${p.id}')">+5</button> <button class="btn sm sub" onclick="prodForm('${p.id}')">수정</button> <button class="btn sm danger" onclick="delProd('${p.id}')">삭제</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">상품이 없어요</td></tr>'}
   </table></div></div>`;
 }
 function prodForm(id){
   const p=id?C().products.find(x=>x.id===id):{emoji:'🍭',name:'',price:100,stock:10};
-  modal(id?'🍭 상품 수정':'🍭 새 상품', `<div class="row"><div style="width:84px"><label class="f">이모지</label><input id="pE" value="${esc(p.emoji)}"></div><div class="grow"><label class="f">상품 이름</label><input id="pN" value="${esc(p.name)}"></div></div>
+  modal(id?'🍭 상품 수정':'🍭 새 상품', `<div class="row"><div style="width:84px"><label class="f">이모지</label><input id="pE" value="<span class="pemo">${esc(p.emoji)}</span>"></div><div class="grow"><label class="f">상품 이름</label><input id="pN" value="${esc(p.name)}"></div></div>
     <div class="row"><div class="grow"><label class="f">가격</label><input id="pP" type="number" min="0" value="${p.price}"></div><div class="grow"><label class="f">재고</label><input id="pS" type="number" min="0" value="${p.stock}"></div></div>`,
     `<button class="btn" onclick="saveProd('${id}')">저장</button>`);
 }
@@ -1484,7 +1500,7 @@ function delProd(id){ ask('이 상품을 삭제할까요?', ()=>{ const c=C(); c
 function martOrders(){
   const c=C(), list=[...c.orders].sort((a,b)=>(a.done-b.done));
   return `<div class="card"><h3>📦 학생 주문 (${c.orders.filter(o=>!o.done).length}건 전달 대기)</h3>
-  ${list.slice(0,80).map(o=>`<div class="item"><span class="emo">${esc(o.emoji)}</span><div class="grow"><b>${esc(stuName(o.sid))}</b> · ${esc(o.name)} ×${o.qty}<div class="meta">${fdate(o.date)} · ${won(o.total)}</div></div>
+  ${list.slice(0,80).map(o=>`<div class="item"><span class="emo"><span class="pemo">${esc(o.emoji)}</span></span><div class="grow"><b>${esc(stuName(o.sid))}</b> · ${esc(o.name)} ×${o.qty}<div class="meta">${fdate(o.date)} · ${won(o.total)}</div></div>
    <button class="btn sm ${o.done?'sub':'mint'}" onclick="toggleOrder('${o.id}')">${o.done?'↩ 취소':'✅ 전달 완료'}</button></div>`).join('')||'<p class="empty">주문이 없어요</p>'}</div>`;
 }
 function toggleOrder(id){ if(guard()) return; const o=C().orders.find(x=>x.id===id); o.done=!o.done; save(); render(); }
@@ -1867,7 +1883,7 @@ function stockCodes(){
   const c=C(), brokers=sorted().filter(isBroker);
   return `<div class="card"><h3>🔑 증권사 비밀번호 만들기</h3><p class="sub">비밀번호는 <b>증권사 직원</b>(직업 특별 권한이 '증권사'인 학생)에게만 줄 수 있어요. 받은 학생만 그 비밀번호로 증권사 직원 화면에 들어갈 수 있어요.</p>
     ${brokers.length?`<div class="row"><div class="grow"><label class="f">누구에게 줄까요?</label><select id="bkS">${brokers.map(s=>`<option value="${s.id}">${s.num}. ${esc(s.name)} (${esc(jobOf(s).name)})</option>`).join('')}</select></div>
-    <div class="grow"><label class="f">비밀번호 (숫자 4~6자리)</label><div class="row"><input id="bkC" class="grow" inputmode="numeric" maxlength="6" placeholder="예: 2580"><button class="btn sm sub" onclick="$('bkC').value=rand4()" title="자동으로 만들기">🎲</button></div></div></div>
+    <div class="grow"><label class="f">비밀번호 (숫자 4~6자리)</label><div class="row"><input id="bkC" class="grow" inputmode="numeric" maxlength="6" placeholder="예: 2580"><button class="btn sm sub" onclick="$('bkC').value=rand4()" title="자동으로 만들기">랜덤</button></div></div></div>
     <div class="row end mt"><button class="btn" onclick="addCode()">🔑 비밀번호 주기</button></div>`
     :`<div class="alert">아직 증권사 직원이 없어요. 학생 관리에서 직업을 '증권사 직원'으로 정해 주세요.</div>`}</div>
     <div class="card"><h3>📋 만든 비밀번호</h3>${c.brokerCodes.map(b=>{ const s=b.sid?stuById(b.sid):null, ok=s&&isBroker(s);
@@ -2312,8 +2328,8 @@ const FEATS = [
 ];
 function appFeatures(){
   const c=C();
-  return FEATS.map(f=>`<div class="card feat"><div class="emo">${f.e}</div><div class="grow" style="flex:1"><div class="jua big">${f.t}</div><p class="sub" style="margin:4px 0">${f.d}</p></div>
-    ${c.features[f.k]?`<div class="center"><span class="chip mint">✅ 추가됨</span><br><button class="link" onclick="toggleFeature('${f.k}')">끄기</button></div>`:`<button class="btn" onclick="toggleFeature('${f.k}')">➕ 기능 추가하기</button>`}</div>`).join('');
+  return `<p class="sub" style="margin:0 0 14px">필요한 기능만 골라서 켤 수 있어요. 꺼도 데이터는 남아 있어서 다시 켜면 그대로예요.</p>` + FEATS.map(f=>`<div class="card feat"><span class="feat-ic">${appIcon(f.k)}</span><div style="flex:1;min-width:0"><div class="jua big">${f.t}</div><p class="sub" style="margin:4px 0 0">${f.d}</p></div>
+    ${c.features[f.k]?`<div class="feat-act"><span class="chip mint" style="margin:0">사용 중</span><button class="btn sm sub" onclick="toggleFeature('${f.k}')">끄기</button></div>`:`<div class="feat-act"><button class="btn" onclick="toggleFeature('${f.k}')">기능 추가하기</button></div>`}</div>`).join('');
 }
 function toggleFeature(k){
   if(guard()) return;
@@ -2357,7 +2373,7 @@ function appSettings(){
       <label class="f">화폐 단위</label><input id="clCur" value="${esc(c.currency)}" maxlength="6" placeholder="예: 원, 미소, 별">
       <div class="row end mt"><button class="btn sub" onclick="saveClassInfo()">저장</button></div>
       <label class="f">학급 코드</label><div class="code-show">${esc(c.code)}</div>
-      <div class="row"><input id="clCode" class="grow" placeholder="새 학급 코드" style="text-transform:uppercase"><button class="btn sm sub" onclick="$('clCode').value=randCode()">🎲</button><button class="btn sm" onclick="changeCode()">코드 바꾸기</button></div></div>
+      <div class="row"><input id="clCode" class="grow" placeholder="새 학급 코드" style="text-transform:uppercase"><button class="btn sm sub" onclick="$('clCode').value=randCode()">랜덤</button><button class="btn sm" onclick="changeCode()">코드 바꾸기</button></div></div>
     <div class="card"><h3>🏷️ 앱 이름 바꾸기</h3>
       ${[['bank','은행'],['mart','마트'],['news','뉴스'],['securities','증권']].map(([k,s])=>`<label class="f">${s}</label><div class="row"><input id="an_${k}" class="grow" value="${esc(c.names[k])}" maxlength="10"><span class="jua">${s}</span></div>`).join('')}
       <div class="row end mt"><button class="btn sub" onclick="saveNames()">저장</button></div></div></div>
