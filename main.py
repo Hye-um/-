@@ -373,6 +373,7 @@ function onServer(a){
     DB = clone(merged); if(!isObj(DB.classes)) DB.classes={};
     Object.values(DB.classes).forEach(fillDefaults);
     SYNC.base = srv; SYNC.ver = a.ver;
+    if(ensureDemo()) render();
     lsSet(STORE, JSON.stringify(DB));
     if(first || stable(DB)!==before){ if(syncBusy()) SYNC.needRender=true; else render(); }
   }
@@ -512,8 +513,8 @@ function seedClass(code,name,pin){
   fillDefaults(c);
   return c;
 }
-function newStudent(n,name,pin,credit){
-  const c=C()||null;
+function newStudent(n,name,pin,credit,cls){
+  const c=cls||C()||null;
   const s={id:uid(), num:n, name, pin:pin||'1004', jobId:'', balance:0, savings:0,
     credit: credit!==undefined ? credit : (c ? c.creditCfg.start : 700),
     certs:[], prefs:{}, allowance:0, royalty:0, saveMonths:[], awards:{}, payStreak:0};
@@ -523,7 +524,7 @@ function newStudent(n,name,pin,credit){
 function makeDemo(){
   const c = seedClass('SUNNY','햇살반','0000');
   [['김하늘','1111'],['이바다','2222'],['박구름','3333'],['최별','4444'],['정나무','5555'],['한솔','6666']].forEach(([n,p],i)=>{
-    const s = newStudent(i+1,n,p);
+    const s = newStudent(i+1,n,p,undefined,c);
     s.balance = 3000;
     const j = c.jobs[i];
     if(j && i<5){ s.jobId=j.id; if(j.certId) s.certs.push(j.certId); }
@@ -1931,7 +1932,7 @@ function appSettings(){
       <p class="sub">학생이 비밀번호를 잊어버렸다면 [초기화]를 눌러 새 비밀번호를 알려주세요.</p>
       ${sorted().map(s=>`<div class="kv"><span>${s.num}. ${esc(s.name)}</span><button class="btn sm sub" onclick="resetPin('${s.id}')">🔑 비번 초기화</button></div>`).join('')||'<p class="empty">학생이 없어요</p>'}</div>
     <div class="card"><h3>💾 데이터 관리</h3><p class="sub">데이터는 이 기기의 브라우저에 저장돼요. 기기를 바꾸거나 기록을 지우기 전에 꼭 백업하세요.</p>
-      <div class="row"><button class="btn sub" onclick="backupFile()">⬇️ 백업 파일 받기</button><button class="btn sub" onclick="backupText()">📋 백업 글자로 보기</button><button class="btn sub" onclick="restoreForm()">⬆️ 백업 불러오기</button><button class="btn danger" onclick="deleteClass()">🗑 학급 삭제</button></div></div>`;
+      <div class="row"><button class="btn sub" onclick="backupFile()">⬇️ 백업 파일 받기</button><button class="btn sub" onclick="backupText()">📋 백업 글자로 보기</button><button class="btn sub" onclick="restoreForm()">⬆️ 백업 불러오기</button><button class="btn danger" onclick="deleteClass()">${S.code===DEMO?'🔄 체험 학급 처음으로':'🗑 학급 삭제'}</button></div></div>`;
   }
   h+=`<div class="card mt"><button class="btn danger wide" onclick="logout()">🚪 로그아웃</button></div>`;
   return h;
@@ -1951,6 +1952,7 @@ function saveNames(){ if(guard()) return; const c=C(); ['bank','mart','news','se
 function changeCode(){
   if(guard()) return;
   const code=val('clCode').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(S.code===DEMO) return toast('체험용 학급의 코드는 바꿀 수 없어요');
   if(code.length<3) return toast('코드는 영어·숫자 3글자 이상이에요');
   if(DB.classes[code]) return toast('이미 쓰는 코드예요');
   ask(`학급 코드를 <b>${code}</b>(으)로 바꿀까요?<br><span class="sub">학생들에게 새 코드를 알려주세요.</span>`, ()=>{ const c=C(); delete DB.classes[c.code]; c.code=code; DB.classes[code]=c; S.code=code; save(); render(); toast('학급 코드를 바꿨어요'); });
@@ -1970,7 +1972,10 @@ function restore(){
   if(!d || !Array.isArray(d.students) || !d.teacherPin) return toast('경제나라 백업이 아니에요');
   d.code=S.code; DB.classes[S.code]=fillDefaults(d); save(); closeModal(); render(); toast('불러왔어요 ✅');
 }
+const DEMO='SUNNY';
+function ensureDemo(){ if(DB && DB.classes && !DB.classes[DEMO]){ makeDemo(); return true; } return false; }
 function deleteClass(){
+  if(S.code===DEMO) return ask('🌟 체험용 학급(SUNNY)은 지울 수 없어요.<br>대신 <b>처음 상태로 되돌릴까요?</b><br><span class="sub">체험하며 바꾼 내용이 모두 처음으로 돌아가요.</span>', ()=>{ delete DB.classes[DEMO]; makeDemo(); S=freshS(); render(); toast('체험용 학급을 처음 상태로 되돌렸어요 🌟'); }, '처음으로 되돌리기');
   ask('정말 이 학급을 삭제할까요?<br><b class="minus">모든 데이터가 사라지고 되돌릴 수 없어요.</b>', ()=>{ delete DB.classes[S.code]; save(); S=freshS(); render(); toast('학급을 삭제했어요'); }, '삭제');
 }
 
@@ -1981,7 +1986,7 @@ function deleteClass(){
   try{ DB=JSON.parse(lsGet(STORE)||'null'); }catch(e){ DB=null; }
   if(!DB || !DB.classes) DB={classes:{}};
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
-  if(!Object.keys(DB.classes).length) makeDemo();
+  ensureDemo();
   Object.values(DB.classes).forEach(fillDefaults);
   try{ const ss=sessionStorage.getItem('ce_session'); if(ss) S=Object.assign(freshS(), JSON.parse(ss)); }catch(e){}
   S.pin='';
