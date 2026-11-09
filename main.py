@@ -425,6 +425,12 @@ input[type=range]{border:none;box-shadow:none}
 .item .emo:empty{display:none}
 .pemo{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 @media (max-width:560px){ .feat{flex-wrap:wrap} .feat-act{flex-direction:row;width:100%;justify-content:flex-end} }
+
+.tb-apps{overflow-x:auto;scrollbar-width:none}
+.tb-apps::-webkit-scrollbar{display:none}
+.tb-app{background:#FFFDF8;flex:0 1 auto;min-width:0;max-width:190px}
+.tb-app.on{background:var(--bg2);box-shadow:inset 0 -4px 0 var(--accent-d)}
+.tb-app:hover{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -729,7 +735,7 @@ function makeDemo(){
 }
 
 /* ---------- 세션 ---------- */
-const freshS = () => ({screen:'code', code:'', role:'', sid:'', pick:'', pin:'', app:'', tab:'', preview:false, broker:false});
+const freshS = () => ({screen:'code', code:'', role:'', sid:'', pick:'', pin:'', app:'', tab:'', preview:false, broker:false, open:[], tabsOf:{}});
 let S = freshS();
 function saveSess(){ try{ sessionStorage.setItem('ce_session', JSON.stringify(S)); }catch(e){} }
 
@@ -1076,10 +1082,21 @@ function badges(){
   return b;
 }
 function toTop(){ const s=$('scroller'); if(s) s.scrollTop=0; }
-function openApp(k,tab){ S.screen='app'; S.app=k; S.tab=tab||''; render(); toTop(); }
-function goHome(){ S.screen='home'; S.app=''; S.tab=''; render(); toTop(); }
-function setTab(t){ S.tab=t; render(); }
-function togglePreview(){ S.preview=!S.preview; S.tab=''; render(); toast(S.preview?'👀 학생 화면을 보여주고 있어요':'👩‍🏫 선생님 화면으로 돌아왔어요'); }
+function openApp(k,tab){
+  S.open=S.open||[]; S.tabsOf=S.tabsOf||{};
+  if(S.app && S.screen==='app') S.tabsOf[S.app]=S.tab;
+  if(!S.open.includes(k)) S.open.push(k);
+  S.screen='app'; S.app=k; S.tab=tab||S.tabsOf[k]||''; render(); toTop();
+}
+function goHome(){ if(S.app && S.screen==='app'){ S.tabsOf=S.tabsOf||{}; S.tabsOf[S.app]=S.tab; } S.screen='home'; S.app=''; S.tab=''; render(); toTop(); }
+function minimizeApp(){ goHome(); }
+function closeApp(k){
+  k=k||S.app; S.open=(S.open||[]).filter(x=>x!==k); if(S.tabsOf) delete S.tabsOf[k];
+  if(S.app===k){ S.app=''; S.screen='home'; S.tab=''; } render(); toTop();
+}
+function taskClick(k){ if(S.screen==='app' && S.app===k) minimizeApp(); else openApp(k); }
+function setTab(t){ S.tab=t; S.tabsOf=S.tabsOf||{}; if(S.app) S.tabsOf[S.app]=t; render(); }
+function togglePreview(){ S.preview=!S.preview; S.tab=''; S.tabsOf={}; render(); toast(S.preview?'👀 학생 화면을 보여주고 있어요':'👩‍🏫 선생님 화면으로 돌아왔어요'); }
 function tabs(list){
   if(!list.find(t=>t[0]===S.tab)) S.tab=list[0][0];
   return `<div class="tabs">${list.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>`;
@@ -1220,7 +1237,9 @@ function taskbar(a){
   return `<div class="taskbar">
     <button class="tb-start" onclick="goHome()" title="바탕화면으로">${appIcon('school')}<span class="clip">${esc(c.name)}</span></button>
     <div class="tb-sep"></div>
-    <div class="tb-apps">${a?`<button class="tb-app" onclick="toTop()">${appIcon(a.k)}<span class="clip">${esc(a.t)}</span></button>`:''}</div>
+    <div class="tb-apps">${(()=>{ const vis=visibleApps(); S.open=(S.open||[]).filter(k=>vis.some(x=>x.k===k));
+      return S.open.map(k=>{ const x=vis.find(v=>v.k===k), on=a&&a.k===k;
+        return `<button class="tb-app ${on?'on':''}" title="${esc(x.t)}${on?' (누르면 내려가요)':' (누르면 열려요)'}" onclick="taskClick('${k}')">${appIcon(k)}<span class="clip">${esc(x.t)}</span></button>`; }).join(''); })()}</div>
     ${S.role==='teacher'?`<button class="tb-btn ${S.preview?'on':''}" onclick="togglePreview()">${S.preview?'선생님 화면으로':'학생 화면 보기'}</button>`:''}
     <span class="tb-user"><span class="avatar sm">${esc(nm.slice(0,1)||'?')}</span><span class="clip">${esc(nm)}</span></span>
     <span class="tb-clock"><span id="tbClock">${clockText()}</span><br><span class="sub" style="font-family:'Gowun Dodum'">${(()=>{const d=new Date();return `${d.getMonth()+1}/${d.getDate()}`})()}</span></span>
@@ -1260,8 +1279,8 @@ function vApp(){
   const rn = a.rename && T() ? `<button class="win-btn" style="width:auto;padding:0 10px;font-size:.85rem" title="이름 바꾸기" onclick="renameApp('${a.rename}')"><span style="width:15px;height:15px;display:inline-block;margin-right:4px">${svgI('pencil')}</span>이름 바꾸기</button>` : '';
   return previewBar() + `<div class="win-wrap"><div class="win">
     <div class="win-title" style="background:${titleColor(a.k)}">${appIcon(a.k)}<span class="win-name clip">${esc(a.t)}</span>${rn}
-      <button class="win-btn" title="최소화 (바탕화면으로)" onclick="goHome()">${svgI('min')}</button>
-      <button class="win-btn close" title="닫기" onclick="goHome()">${svgI('close')}</button></div>
+      <button class="win-btn" title="최소화 (작업 표시줄로)" onclick="minimizeApp()">${svgI('min')}</button>
+      <button class="win-btn close" title="닫기" onclick="closeApp()">${svgI('close')}</button></div>
     <div class="win-body">${body}</div></div></div>` + taskbar(a);
 }
 
