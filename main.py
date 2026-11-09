@@ -27,7 +27,12 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="우리반 경제나라", page_icon="🏫", layout="wide")
 st.markdown(
     "<style>#MainMenu, header, footer {visibility:hidden;} "
-    ".block-container {padding:0 !important; max-width:100% !important;}</style>",
+    "header, footer, [data-testid='stHeader'], [data-testid='stToolbar'], [data-testid='stDecoration'] {display:none !important;} "
+    ".block-container, [data-testid='stMainBlockContainer'] {padding:0 !important; max-width:100% !important;} "
+    "[data-testid='stVerticalBlock'] {gap:0 !important;} "
+    "[data-testid='stElementContainer']:has(style) {display:none !important;} "
+    "iframe {display:block;} "
+    "html, body, [data-testid='stAppViewContainer'], [data-testid='stMain'] {overflow:hidden !important;}</style>",
     unsafe_allow_html=True,
 )
 
@@ -431,6 +436,10 @@ input[type=range]{border:none;box-shadow:none}
 .tb-app{background:#FFFDF8;flex:0 1 auto;min-width:0;max-width:190px}
 .tb-app.on{background:var(--bg2);box-shadow:inset 0 -4px 0 var(--accent-d)}
 .tb-app:hover{background:var(--accent)}
+
+body.logged #app{min-height:100%}
+.desktop{min-height:100%}
+#scroller{overscroll-behavior:contain}
 </style>
 </head>
 <body>
@@ -581,9 +590,11 @@ function syncStart(){
   if(!SYNC.on) return;
   window.addEventListener('message', e=>{ const d=e.data; if(d && d.type==='streamlit:render') onServer(d.args && d.args.sync); });
   const post = m => { try{ window.parent.postMessage(Object.assign({isStreamlitMessage:true}, m), '*'); }catch(e){} };
-  const fit = () => { let h=900; try{ h=window.parent.innerHeight||900; }catch(e){} post({type:'streamlit:setFrameHeight', height:Math.max(480, h-6)}); };
+  const fit = () => { let h=900;
+    try{ const pw=window.parent, fe=window.frameElement; const top = fe ? fe.getBoundingClientRect().top + (pw.scrollY||0) : 0; h=(pw.innerHeight||900) - top; }catch(e){}
+    post({type:'streamlit:setFrameHeight', height:Math.max(480, Math.floor(h))}); };
   post({type:'streamlit:componentReady', apiVersion:1});
-  fit(); try{ window.parent.addEventListener('resize', fit); }catch(e){} window.addEventListener('resize', fit);
+  fit(); setTimeout(fit,500); setTimeout(fit,2000); try{ window.parent.addEventListener('resize', fit); }catch(e){} window.addEventListener('resize', fit);
   setInterval(syncIdle, 700);
   (function poll(){ syncSend(); setTimeout(poll, document.hidden ? 15000 : 3000); })();
   setTimeout(()=>{ if(!SYNC.got){ SYNC.got=true; render(); } }, 6000);
