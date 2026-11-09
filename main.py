@@ -233,6 +233,191 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}
   .stat .n{font-size:1.1rem}
   .bar-row .vv{width:80px;flex-basis:80px;font-size:.8rem}
 }
+
+/* ===== 컴퓨터 바탕화면 스타일 ===== */
+body{background:#BFE3FF;background-size:cover;background-position:center}
+#app{max-width:none;padding:0;min-height:100vh}
+body.logged #scroller{bottom:56px}
+.glass{background:rgba(255,255,255,.80);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.65);box-shadow:0 10px 40px rgba(40,30,60,.18)}
+.svgi{width:100%;height:100%;display:block}
+.appic{display:inline-flex;align-items:center;justify-content:center;border-radius:24%;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 4px 10px rgba(0,0,0,.18);flex:0 0 auto}
+.appic .svgi{width:58%;height:58%}
+/* 잠금화면 */
+.lock{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px 40px;gap:6px}
+.lock-clock{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:4.6rem;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.28);line-height:1}
+.lock-date{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.35);margin-bottom:18px;font-size:1.05rem}
+.lock .login-card{margin:0;border-radius:22px}
+.logo-ic{width:76px;height:76px;margin:0 auto 6px}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:linear-gradient(145deg,var(--accent),var(--accent-d));flex:0 0 auto}
+.avatar.lg{width:84px;height:84px;font-size:2.2rem;margin:0 auto 8px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.avatar.md{width:46px;height:46px;font-size:1.25rem}
+.avatar.sm{width:28px;height:28px;font-size:.9rem}
+.role-btn{background:rgba(255,255,255,.9)!important;display:flex;flex-direction:column;align-items:center;gap:8px}
+.role-btn .appic{width:64px;height:64px}
+.pick-btn{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.92)}
+/* 바탕화면 */
+.desktop{display:flex;gap:24px;padding:22px 22px 30px;align-items:flex-start;min-height:calc(100vh - 56px)}
+.desk-icons{flex:1;display:grid;grid-template-columns:repeat(auto-fill,96px);grid-auto-rows:110px;gap:6px 8px;align-content:start}
+.dicon{position:relative;border:none;background:transparent;border-radius:12px;padding:8px 4px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff;font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;transition:background .12s}
+.dicon:hover,.dicon:focus-visible{background:rgba(255,255,255,.22);outline:none}
+.dicon:active{background:rgba(255,255,255,.34)}
+.dicon .appic{width:58px;height:58px}
+.dicon-label{font-size:.82rem;line-height:1.25;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.25);word-break:keep-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dicon .badge{position:absolute;top:2px;right:14px;background:#FF5A5F;color:#fff;border-radius:999px;min-width:22px;height:22px;font-size:.78rem;display:flex;align-items:center;justify-content:center;padding:0 6px;border:2px solid #fff;font-family:'Jua'}
+.desk-widgets{width:310px;flex:0 0 310px;display:flex;flex-direction:column;gap:14px}
+.widget{border-radius:18px;padding:16px}
+.widget h4{margin:0 0 8px;font-family:'Jua';font-weight:400;font-size:1rem;color:var(--sub)}
+.widget .money-big{font-size:2rem}
+.sticky{background:#FFF3B0;border-radius:4px 4px 16px 4px;padding:14px 16px;box-shadow:0 8px 22px rgba(0,0,0,.15);transform:rotate(-1deg);cursor:pointer;border:none}
+.sticky b{font-family:'Jua';font-weight:400;font-size:1.02rem}
+.preview-bar{background:#FFE07A;color:#5B4B45;text-align:center;padding:7px;font-family:'Jua';position:sticky;top:0;z-index:20}
+/* 앱 창 */
+.win-wrap{padding:20px 20px 28px}
+.win{max-width:1100px;margin:0 auto;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 22px 60px rgba(30,20,50,.32),0 0 0 1px rgba(0,0,0,.06)}
+.win-title{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.win-title .appic{width:26px;height:26px;border-radius:7px}
+.win-name{flex:1;font-family:'Jua';font-size:1.08rem;min-width:0}
+.win-btn{width:40px;height:32px;border:none;background:transparent;border-radius:8px;cursor:pointer;color:var(--ink);font-size:1rem;display:inline-flex;align-items:center;justify-content:center}
+.win-btn:hover{background:rgba(0,0,0,.07)}
+.win-btn.close:hover{background:#E8574A;color:#fff}
+.win-btn .svgi{width:16px;height:16px}
+.win-body{padding:18px}
+/* 작업 표시줄 */
+.taskbar{position:fixed;left:0;right:0;bottom:0;height:56px;z-index:40;display:flex;align-items:center;gap:6px;padding:0 10px;background:rgba(255,255,255,.72);backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);border-top:1px solid rgba(255,255,255,.7);box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.tb-start{display:flex;align-items:center;gap:8px;border:none;background:transparent;border-radius:10px;padding:6px 10px;cursor:pointer;font-family:'Jua';font-size:1rem;color:var(--ink);max-width:220px}
+.tb-start:hover,.tb-ico:hover{background:rgba(0,0,0,.06)}
+.tb-start .appic{width:32px;height:32px;border-radius:9px}
+.tb-sep{width:1px;height:28px;background:rgba(0,0,0,.12);margin:0 4px}
+.tb-apps{flex:1;display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
+.tb-app{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:10px;background:rgba(255,255,255,.75);box-shadow:inset 0 -3px 0 var(--accent-d);max-width:230px;font-size:.92rem;cursor:pointer;border:none;color:var(--ink);font-family:inherit}
+.tb-app .appic{width:26px;height:26px;border-radius:7px}
+.tb-ico{width:40px;height:40px;border:none;background:transparent;border-radius:10px;cursor:pointer;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:9px}
+.tb-btn{border:none;border-radius:10px;padding:7px 11px;font-family:'Jua';font-size:.88rem;cursor:pointer;background:rgba(255,255,255,.85);color:var(--ink);white-space:nowrap}
+.tb-btn.on{background:#FFE07A}
+.tb-user{display:flex;align-items:center;gap:7px;font-size:.92rem;max-width:150px}
+.tb-clock{text-align:right;font-size:.82rem;line-height:1.2;padding:0 4px;white-space:nowrap;font-family:'Jua'}
+/* 배경화면 고르기 */
+.wall-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.wall{position:relative;height:64px;border-radius:12px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;background-size:cover!important;background-position:center!important;display:flex;align-items:flex-end;justify-content:center;padding:0 0 4px;overflow:hidden}
+.wall span{font-size:.75rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-family:'Jua'}
+.wall.on{outline:3px solid var(--accent-d);outline-offset:2px}
+.wall.photo{background:#EEE7E2}
+.wall.photo span{color:var(--ink);text-shadow:none}
+@media (max-width:760px){
+  .desktop{flex-direction:column-reverse;padding:14px 10px 20px;gap:14px}
+  .desk-widgets{width:100%;flex:none}
+  .desk-icons{width:100%;grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}
+  .dicon .appic{width:52px;height:52px}
+  .win-wrap{padding:8px 6px 14px}
+  .win-body{padding:12px}
+  .tb-start span.clip,.tb-user .clip,.tb-app .clip{display:none}
+  .lock-clock{font-size:3.4rem}
+  .seatmap{gap:4px}
+  .seat{font-size:.66rem;min-height:52px;padding:5px 1px;border-radius:10px}
+  .seat b{font-size:.78rem}
+  .seat .sub{display:none}
+}
+body.logged #toast{bottom:74px}
+
+/* ===== 레트로 컴퓨터 스타일 ===== */
+:root{--ol:#3F3A5E}
+body{color:var(--ink)}
+.card{background:#FFFDF8;border:2.5px solid var(--ol);border-radius:10px;box-shadow:4px 4px 0 var(--ol)}
+.card.hero{background:var(--bg2)}
+.btn{background:var(--accent);color:var(--ol);border:2.5px solid var(--ol);border-radius:8px;box-shadow:3px 3px 0 var(--ol);padding:8px 14px}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ol)}
+.btn.sub{background:#FFFDF8;color:var(--ol);border:2.5px solid var(--ol);box-shadow:3px 3px 0 var(--ol)}
+.btn.sm{border-width:2px;box-shadow:2px 2px 0 var(--ol);padding:5px 10px}
+.btn.danger{background:#FFA99E;box-shadow:3px 3px 0 var(--ol)} .btn.mint{background:#9FE0C0;box-shadow:3px 3px 0 var(--ol)}
+.btn.sm.danger,.btn.sm.mint{box-shadow:2px 2px 0 var(--ol)}
+.btn.wide{box-shadow:4px 4px 0 var(--ol)}
+input,select,textarea{border:2px solid var(--ol);border-radius:6px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{border-color:var(--ol);box-shadow:0 0 0 3px var(--accent)}
+input[type=range]{border:none;box-shadow:none}
+.tab{background:#FFFDF8;color:var(--ol);border:2px solid var(--ol);border-radius:8px;box-shadow:2px 2px 0 var(--ol)}
+.tab.on{background:var(--accent);color:var(--ol)}
+.chip{border:1.5px solid var(--ol);color:var(--ink)}
+.status{border:1.5px solid var(--ol)}
+.t th{color:var(--ol);border-bottom:2.5px solid var(--ol)}
+.alert{border:2px solid var(--ol);border-radius:8px;background:#FFE4EC}
+.hint{border:2px dashed var(--ol);background:#FFF8E6;color:var(--ink)}
+.stat{border:2px solid var(--ol);background:#FFFDF8;border-radius:8px}
+.stat .n{color:var(--ol)}
+.money-big,.prod .price{color:var(--accent-d)}
+.gb{border:2px solid var(--ol);background:#FFFDF8;border-radius:6px} .gb.on{background:var(--accent);color:var(--ol)}
+.bar-row .bt{border:2px solid var(--ol);background:#fff;border-radius:5px;height:18px}
+.bar-row .bf{background:repeating-linear-gradient(90deg,var(--accent) 0 9px,var(--accent-d) 9px 11px);border-radius:0}
+.seat{border:2px solid var(--ol);border-radius:8px;box-shadow:2px 2px 0 var(--ol);background:#FFFDF8}
+.seat.mine{background:#FFE08A;border-color:var(--ol)} .seat.taken{background:#E5DCFF}
+.desk{border:2px solid var(--ol);background:var(--bg2)}
+.stepper button{border:2px solid var(--ol);background:#FFFDF8;color:var(--ol)}
+.swatch{border:2.5px solid var(--ol);box-shadow:2px 2px 0 var(--ol);width:40px;height:40px;border-radius:10px;position:relative}
+.swatch.on{outline:3px solid var(--ol);outline-offset:2px}
+.swatch.pick{display:inline-block;cursor:pointer;background-image:conic-gradient(#FF9AA2,#FFDAC1,#E2F0CB,#B5EAD7,#C7CEEA,#F3B0E8,#FF9AA2)!important}
+.swatch.pick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.key{background:#FFFDF8;border:2.5px solid var(--ol);box-shadow:3px 3px 0 var(--ol);border-radius:10px;color:var(--ol)}
+.key:active{background:var(--accent);transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ol)}
+.dot{border:2.5px solid var(--ol);border-radius:5px} .dot.on{background:var(--accent)}
+.role-btn{border:2.5px solid var(--ol)!important;box-shadow:4px 4px 0 var(--ol);border-radius:12px;background:#FFFDF8!important;color:var(--ol)}
+.pick-btn{border:2.5px solid var(--ol);box-shadow:3px 3px 0 var(--ol);border-radius:10px;background:#FFFDF8;color:var(--ol)}
+.avatar{border:2px solid var(--ol);border-radius:10px;background:var(--accent);color:var(--ol)}
+.avatar.sm{border-radius:7px;border-width:1.5px}
+.avatar.lg{box-shadow:4px 4px 0 var(--ol)} .avatar.lg .svgi{width:60%;height:60%}
+.link{color:var(--ol)}
+.overlay{background:rgba(40,34,60,.32)}
+.modal{padding:0;border:2.5px solid var(--ol);border-radius:10px;box-shadow:7px 7px 0 var(--ol);background:#FFFDF8;overflow:hidden}
+.modal .win-title{position:static}
+.modal-body{padding:18px}
+#toast{background:#FFFDF8;color:var(--ol);border:2.5px solid var(--ol);box-shadow:4px 4px 0 var(--ol);border-radius:8px}
+/* 창 */
+.win{background:var(--bg);border:2.5px solid var(--ol);border-radius:10px;box-shadow:7px 7px 0 var(--ol)}
+.win-title{background:#FBB4CF;border-bottom:2.5px solid var(--ol);backdrop-filter:none;-webkit-backdrop-filter:none;padding:6px 8px 6px 10px;gap:8px}
+.win-title .appic{width:26px;height:26px;border-radius:7px;border-width:2px;box-shadow:none}
+.win-name{color:var(--ol)}
+.win-btn{width:28px;height:26px;border:2px solid var(--ol);background:#FFFDF8;border-radius:5px;color:var(--ol);margin-left:2px;padding:0}
+.win-btn:hover{background:var(--accent)} .win-btn.close:hover{background:#FFA99E;color:var(--ol)}
+.win-btn .svgi{width:14px;height:14px} .win-btn.deco{display:inline-flex;align-items:center;justify-content:center;cursor:default}
+/* 잠금화면 */
+.lock-clock{color:var(--ol);text-shadow:none;background:#FFFDF8;border:2.5px solid var(--ol);box-shadow:5px 5px 0 var(--ol);border-radius:14px;padding:8px 26px;font-size:3.6rem}
+.lock-date{color:var(--ol);text-shadow:none;background:#FFFDF8;border:2px solid var(--ol);border-radius:999px;padding:3px 14px;margin:12px 0 20px;box-shadow:2px 2px 0 var(--ol)}
+.login-win{width:100%;max-width:440px} .login-win.wide{max-width:620px}
+.login-win .login-card{border:none;box-shadow:none;background:transparent;margin:0;max-width:none;width:auto;border-radius:0;padding:24px 24px 26px;backdrop-filter:none;-webkit-backdrop-filter:none}
+.login-win .login-card h1{color:var(--ol)}
+.logo-ic .appic{width:76px;height:76px;border-radius:18px}
+/* 바탕화면 */
+.appic{border:2.5px solid var(--ol);box-shadow:3px 3px 0 var(--ol);color:var(--ol);border-radius:16px}
+.appic .svgi{width:56%;height:56%}
+.dicon{color:var(--ol)}
+.dicon:hover,.dicon:focus-visible{background:rgba(255,255,255,.28);outline:2px dashed var(--ol);outline-offset:-2px}
+.dicon-label{color:var(--ol);text-shadow:none;background:#FFFDF8;border:1.5px solid var(--ol);border-radius:5px;padding:1px 6px;font-size:.78rem}
+.dicon .badge{border:2px solid var(--ol);background:#FF7A7A}
+.glass{background:#FFFDF8;backdrop-filter:none;-webkit-backdrop-filter:none;border:2.5px solid var(--ol);box-shadow:5px 5px 0 var(--ol);border-radius:10px}
+.widget{padding:0;overflow:hidden}
+.w-bar{display:flex;align-items:center;gap:6px;padding:5px 10px;border-bottom:2.5px solid var(--ol);font-family:'Jua';color:var(--ol);font-size:.95rem}
+.w-bar i{margin-left:auto;width:14px;height:14px;border:2px solid var(--ol);border-radius:3px;background:#FFFDF8}
+.w-body{padding:14px 16px}
+.sticky{background:#FFF1A8;border:2.5px solid var(--ol);box-shadow:4px 4px 0 var(--ol);border-radius:4px;transform:rotate(-1.5deg)}
+.preview-bar{border-bottom:2.5px solid var(--ol);background:#FFE08A;color:var(--ol)}
+/* 작업 표시줄 */
+.taskbar{background:#FFFDF8;border-top:2.5px solid var(--ol);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.tb-start{border:2px solid var(--ol);background:var(--accent);box-shadow:2px 2px 0 var(--ol);border-radius:8px;padding:3px 10px 3px 4px;color:var(--ol)}
+.tb-start .appic{width:30px;height:30px;border-radius:7px;border-width:2px;box-shadow:none}
+.tb-sep{background:var(--ol);opacity:.35}
+.tb-app{border:2px solid var(--ol);background:var(--bg2);box-shadow:none;border-radius:8px;color:var(--ol)}
+.tb-app .appic{width:24px;height:24px;border-radius:6px;border-width:1.5px;box-shadow:none}
+.tb-btn{border:2px solid var(--ol);box-shadow:2px 2px 0 var(--ol);background:#FFFDF8;color:var(--ol);border-radius:8px}
+.tb-btn.on{background:#FFE08A}
+.tb-ico{border:2px solid var(--ol);background:#FFFDF8;width:36px;height:36px;padding:6px;border-radius:8px;box-shadow:2px 2px 0 var(--ol)}
+.tb-clock{color:var(--ol)}
+/* 배경 고르기 */
+.wall{border:2.5px solid var(--ol);box-shadow:3px 3px 0 var(--ol);border-radius:10px;height:74px}
+.wall span{color:var(--ol);text-shadow:none;background:#FFFDF8;border:1.5px solid var(--ol);border-radius:5px;padding:0 6px;font-size:.72rem}
+.wall.on{outline:3px solid var(--ol);outline-offset:3px}
+/* 스크롤바 */
+#scroller::-webkit-scrollbar{width:14px}
+#scroller::-webkit-scrollbar-track{background:#FFFDF8;border-left:2px solid var(--ol)}
+#scroller::-webkit-scrollbar-thumb{background:var(--accent);border:2px solid var(--ol);border-radius:4px}
+@media (max-width:760px){ .lock-clock{font-size:2.8rem;padding:6px 18px} .appic{box-shadow:2px 2px 0 var(--ol)} }
 </style>
 </head>
 <body>
@@ -269,7 +454,7 @@ function signed(n){ return (n>0?'+':n<0?'−':'') + won(Math.abs(n)); }
 let toastTimer=null;
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
 function modal(title, body, actions){
-  $('modal-root').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><h3>${title}</h3><div>${body}</div><div class="acts">${actions||''}<button class="btn sub" onclick="closeModal()">닫기</button></div></div></div>`;
+  $('modal-root').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="win-title" style="background:${titleColor('modal')}"><span class="win-name clip">${title}</span><button class="win-btn close" title="닫기" onclick="closeModal()">${svgI('close')}</button></div><div class="modal-body"><div>${body}</div><div class="acts">${actions||''}<button class="btn sub" onclick="closeModal()">닫기</button></div></div></div></div>`;
 }
 function closeModal(){ $('modal-root').innerHTML=''; setTimeout(syncIdle,0); }
 let _cb=null;
@@ -613,11 +798,232 @@ function prefs(){
 }
 function applyPrefs(){
   const p = prefs();
-  document.body.dataset.theme = p.theme || 'peach';
+  const ac=accentOf(p), ol=p.outline||'#3F3A5E', st=document.body.style;
+  st.setProperty('--accent', ac); st.setProperty('--accent-d', mix(ac,'#2A2440',.42));
+  st.setProperty('--bg', mix(ac,'#ffffff',.9)); st.setProperty('--bg2', mix(ac,'#ffffff',.72));
+  st.setProperty('--ol', ol); st.setProperty('--line', mix(ol,'#ffffff',.8)); st.setProperty('--ink', mix(ol,'#2A2440',.3));
+  const wc=wallCss(); if(document.body.dataset.wall!==wc){ document.body.dataset.wall=wc; st.background=wc; }
+  document.body.classList.toggle('logged', S.screen==='home'||S.screen==='app');
   document.documentElement.style.fontSize = (p.font||16) + 'px';
   $('dim').style.opacity = ((100-(p.bright||100))/100).toFixed(2);
 }
 function setPref(k,v,rerender){ const p=prefs(); p[k]=v; save(); applyPrefs(); if(rerender) render(); }
+
+
+/* ---------- 아이콘 (직접 그린 SVG) ---------- */
+const ICON_PATHS = {
+  bank:'<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/>',
+  mart:'<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2.5 3.5H5l2.4 11.2A1.5 1.5 0 0 0 8.9 16h8.3a1.5 1.5 0 0 0 1.5-1.2L20.5 7H6"/>',
+  jobs:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/>',
+  tax:'<path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  law:'<path d="M12 3v17M8 20h8M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/>',
+  news:'<rect x="3" y="4" width="15" height="16" rx="2"/><path d="M18 8h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2h-1"/><path d="M7 8h7M7 12h7M7 16h4"/>',
+  stock:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/><path d="M16 7h4v4"/>',
+  realty:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  credit:'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/>',
+  ins:'<path d="M12 20s-7-4.4-9-9a4.6 4.6 0 0 1 9-3 4.6 4.6 0 0 1 9 3c-2 4.6-9 9-9 9z"/><path d="M12 9.5v5M9.5 12h5"/>',
+  students:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/>',
+  stats:'<path d="M3 20h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/>',
+  features:'<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  school:'<path d="M3 21h18M5 21V10l7-4 7 4v11"/><path d="M10 21v-5h4v5"/><path d="M12 6V2.5l3 1.2-3 1.2"/>',
+  student:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  teacher:'<circle cx="12" cy="7.5" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/><path d="M15.5 14.5l2 2 3.5-4"/>',
+  power:'<path d="M12 3v8"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/>',
+  min:'<path d="M5 12h14"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>'
+};
+const APP_GRAD = {
+  bank:['#7EB6FF','#4F86E8'], mart:['#FFD36E','#F2A422'], jobs:['#B79CFF','#8565EE'], tax:['#6FD6A8','#2FAF78'],
+  law:['#7FD8E8','#2FA9C0'], news:['#FF9EB5','#EC5F86'], stock:['#9BE15D','#45B13E'], realty:['#FFB088','#EF7748'],
+  credit:['#FFC86B','#E39A2F'], ins:['#FF9A9A','#E45858'], students:['#C59BFF','#9563E6'], stats:['#7CC8FF','#3594E3'],
+  features:['#8EE3C0','#3FBB8D'], settings:['#B8C2CC','#7F8C99'], school:['#FFAA8F','#EE7B5F'],
+  student:['#FFD36E','#F2A422'], teacher:['#6FD6A8','#2FAF78']
+};
+const APP_COL = {
+  bank:'#A9C4FF', mart:'#FFD27A', jobs:'#CDB4FA', tax:'#9FE0C0', law:'#9BDCEB', news:'#FBB4CF', stock:'#C2E89A',
+  realty:'#FFC09A', credit:'#FFE08A', ins:'#FFB0B0', students:'#DCC2FA', stats:'#A9D4FF', features:'#AEEBD0',
+  settings:'#D6D2E2', school:'#FBB4CF', student:'#FFE08A', teacher:'#9FE0C0', modal:'#FFE08A'
+};
+const ACCENTS = [['분홍','#F9B4CF'],['노랑','#FFD27A'],['라벤더','#C4B2F7'],['하늘','#9DCDF5'],['민트','#9FE0C0'],['산호','#FFA99E'],['주황','#FFBF85'],['회색','#CFCBD9']];
+const TITLES = [['분홍','#FBB4CF'],['노랑','#FFE08A'],['라벤더','#CDB4FA'],['하늘','#A9D4FF'],['민트','#9FE0C0'],['산호','#FFB0A6'],['크림','#FFF4DA'],['남색','#8C93C9']];
+const OUTLINES = [['남색','#3F3A5E'],['갈색','#5E4A55'],['검정','#26232E'],['보라','#5B4690'],['파랑','#2F5B9A']];
+const OLD_THEME = {peach:'#FFAA8F', mint:'#86D2B0', lavender:'#B9A9F2', sky:'#8FC6F0', lemon:'#F7C96B', berry:'#F5A3BC'};
+function accentOf(p){ const t=p.theme; if(!t) return '#F9B4CF'; return t[0]==='#' ? t : (OLD_THEME[t]||'#F9B4CF'); }
+function titleColor(k){ const p=prefs(); return (p.title && p.title!=='rainbow') ? p.title : (APP_COL[k]||'#FBB4CF'); }
+const svgI = k => `<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]||''}</svg>`;
+function appIcon(k){ return `<span class="appic" style="background:${APP_COL[k]||'#D6D2E2'}">${svgI(k)}</span>`; }
+
+/* ---------- 색깔 도구 ---------- */
+function hx(h){ h=String(h||'#cccccc').replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16)||0; return [n>>16&255,n>>8&255,n&255]; }
+function toHex(a){ return '#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function mix(a,b,t){ const A=hx(a),B=hx(b); return toHex(A.map((v,i)=>v+(B[i]-v)*t)); }
+/* ---------- 일러스트 배경화면 (직접 그린 SVG) ---------- */
+const ILL = '#5E4A55';
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const f1 = n => (+n).toFixed(1);
+function bands(cols, ys, amp, seed){
+  const R=mulberry(seed); let o='';
+  cols.forEach((c,i)=>{ const y=ys[i]; let d=`M-90 ${y}`;
+    for(let x=-90;x<1690;x+=130){ d+=` Q${x+65} ${f1(y+(R()*2-1)*amp)} ${x+130} ${f1(y+(R()*2-1)*amp*.5)}`; }
+    o+=`<path d="${d} L1690 1000 L-90 1000Z" fill="${c}"/>`; });
+  return o;
+}
+function dots(seed,n,yMin,yMax,cols,rMax){ const R=mulberry(seed); let o='';
+  for(let i=0;i<n;i++){ const x=R()*1600, y=yMin+Math.pow(R(),1.5)*(yMax-yMin), r=.8+R()*(rMax||2.2);
+    o+=`<circle cx="${x|0}" cy="${y|0}" r="${f1(r)}" fill="${cols[i%cols.length]}" opacity="${(.55+R()*.45).toFixed(2)}"/>`; } return o; }
+function star5(x,y,r,fill){ let p=''; for(let i=0;i<10;i++){ const a=Math.PI/5*i-Math.PI/2, rr=i%2?r*.48:r; p+=`${f1(x+Math.cos(a)*rr)},${f1(y+Math.sin(a)*rr)} `; }
+  return `<polygon points="${p}" fill="${fill}" stroke="${fill}" stroke-width="${f1(r*.3)}" stroke-linejoin="round"/>`; }
+function stars5(seed,n,yMax,fill){ const R=mulberry(seed); let o=''; for(let i=0;i<n;i++) o+=star5(R()*1600, 20+Math.pow(R(),1.4)*yMax, 4+R()*6, fill); return o; }
+function sparkle(x,y,r,fill){ x=+x; y=+y; r=+r; const k=r*.18; x=+x.toFixed(1); y=+y.toFixed(1); return `<path d="M${x} ${y-r}Q${x+k} ${y-k} ${x+r} ${y}Q${x+k} ${y+k} ${x} ${y+r}Q${x-k} ${y+k} ${x-r} ${y}Q${x-k} ${y-k} ${x} ${y-r}Z" fill="${fill}"/>`; }
+function sparkles(seed,n,yMin,yMax,fill){ const R=mulberry(seed); let o=''; for(let i=0;i<n;i++) o+=sparkle(R()*1600, yMin+R()*(yMax-yMin), 6+R()*9, fill); return o; }
+const shooting = (x,y,len) => `<line x1="${x}" y1="${y}" x2="${x-len}" y2="${f1(y+len*.42)}" stroke="url(#ss)" stroke-width="3.5" stroke-linecap="round"/>`;
+function moon(x,y,r){ return `<circle cx="${x}" cy="${y}" r="${r*2.2}" fill="#FFF6C8" opacity=".22"/><path d="M${x} ${y-r}A${r} ${r} 0 1 0 ${x} ${y+r}A${r*1.3} ${r*1.3} 0 0 1 ${x} ${y-r}Z" fill="#FFE79A" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/>`; }
+function face(x,y,s){ return `<circle cx="${f1(x-13*s)}" cy="${f1(y)}" r="${f1(3.4*s)}" fill="${ILL}"/><circle cx="${f1(x+13*s)}" cy="${f1(y)}" r="${f1(3.4*s)}" fill="${ILL}"/><path d="M${f1(x-6*s)} ${f1(y+8*s)}Q${x} ${f1(y+14*s)} ${f1(x+6*s)} ${f1(y+8*s)}" stroke="${ILL}" stroke-width="${f1(2.4*s)}" fill="none" stroke-linecap="round"/><ellipse cx="${f1(x-25*s)}" cy="${f1(y+9*s)}" rx="${f1(7*s)}" ry="${f1(4*s)}" fill="#FF9FB8" opacity=".75"/><ellipse cx="${f1(x+25*s)}" cy="${f1(y+9*s)}" rx="${f1(7*s)}" ry="${f1(4*s)}" fill="#FF9FB8" opacity=".75"/>`; }
+function cloud(x,y,s,fill,withFace){
+  const cs=[[0,0,1],[-1,.3,.66],[1,.28,.7],[-.45,-.45,.66],[.48,-.38,.72],[0,.45,.7]].map(([dx,dy,r])=>[x+dx*62*s, y+dy*55*s, r*52*s]);
+  let o=cs.map(([a,b,r])=>`<circle cx="${f1(a)}" cy="${f1(b)}" r="${f1(r+3.2)}" fill="${ILL}"/>`).join('')+cs.map(([a,b,r])=>`<circle cx="${f1(a)}" cy="${f1(b)}" r="${f1(r)}" fill="${fill}"/>`).join('');
+  return o+(withFace?face(x,y+8*s,s):'');
+}
+function sun(x,y,r,withFace){ let rays=''; for(let i=0;i<12;i++){ const a=Math.PI*2*i/12; rays+=`<path d="M${f1(x+Math.cos(a)*(r+14))} ${f1(y+Math.sin(a)*(r+14))}L${f1(x+Math.cos(a)*(r+32))} ${f1(y+Math.sin(a)*(r+32))}" stroke="${ILL}" stroke-width="4" stroke-linecap="round"/>`; }
+  return `<circle cx="${x}" cy="${y}" r="${r*1.9}" fill="#FFF3B8" opacity=".35"/>${rays}<circle cx="${x}" cy="${y}" r="${r}" fill="#FFDD72" stroke="${ILL}" stroke-width="3.5"/>${withFace?face(x,y+4,r/55):''}`; }
+const hill = (d,fill,sw) => `<path d="${d}" fill="${fill}" stroke="${ILL}" stroke-width="${sw||3.5}" stroke-linejoin="round"/>`;
+function tree(x,y,s,c){ return `<rect x="${f1(x-7*s)}" y="${f1(y-34*s)}" width="${f1(14*s)}" height="${f1(36*s)}" rx="${f1(4*s)}" fill="#C9966F" stroke="${ILL}" stroke-width="3"/><circle cx="${x}" cy="${f1(y-58*s)}" r="${f1(34*s)}" fill="${c}" stroke="${ILL}" stroke-width="3.2"/><circle cx="${f1(x-11*s)}" cy="${f1(y-70*s)}" r="${f1(8*s)}" fill="#fff" opacity=".35"/>`; }
+function pine(x,y,s,snow){ let o=`<rect x="${f1(x-6*s)}" y="${f1(y-20*s)}" width="${f1(12*s)}" height="${f1(22*s)}" fill="#B8865F" stroke="${ILL}" stroke-width="3"/>`;
+  [[0,60,50],[-34,48,40],[-64,34,30]].forEach(([dy,w,h])=>{ o+=`<path d="M${f1(x-w*s)} ${f1(y-20*s+dy*s)}L${x} ${f1(y-20*s+dy*s-h*1.6*s)}L${f1(x+w*s)} ${f1(y-20*s+dy*s)}Z" fill="#7DBF8E" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/>`;
+    if(snow) o+=`<path d="M${f1(x-w*.45*s)} ${f1(y-20*s+dy*s-h*.9*s)}L${x} ${f1(y-20*s+dy*s-h*1.6*s)}L${f1(x+w*.45*s)} ${f1(y-20*s+dy*s-h*.9*s)}Q${x} ${f1(y-20*s+dy*s-h*.75*s)} ${f1(x-w*.45*s)} ${f1(y-20*s+dy*s-h*.9*s)}Z" fill="#fff"/>`; });
+  return o; }
+function house(x,y,s,roof,lit){ const w=72*s,h=56*s;
+  return `<rect x="${f1(x-w/2)}" y="${f1(y-h)}" width="${f1(w)}" height="${f1(h)}" fill="#FFF3DF" stroke="${ILL}" stroke-width="3"/>
+  <path d="M${f1(x-w/2-10*s)} ${f1(y-h)}L${x} ${f1(y-h-46*s)}L${f1(x+w/2+10*s)} ${f1(y-h)}Z" fill="${roof}" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="${f1(x-w/2+10*s)}" y="${f1(y-h+13*s)}" width="${f1(19*s)}" height="${f1(17*s)}" rx="${f1(3*s)}" fill="${lit?'#FFE27A':'#BFE3FF'}" stroke="${ILL}" stroke-width="2.5"/>
+  <rect x="${f1(x+6*s)}" y="${f1(y-29*s)}" width="${f1(16*s)}" height="${f1(29*s)}" rx="${f1(3*s)}" fill="#E8B48C" stroke="${ILL}" stroke-width="2.5"/>${lit?`<circle cx="${f1(x-w/2+19.5*s)}" cy="${f1(y-h+21*s)}" r="${f1(22*s)}" fill="#FFE27A" opacity=".18"/>`:''}`; }
+function flowers(seed,n,yMin,yMax,cols){ const R=mulberry(seed); let o='';
+  for(let i=0;i<n;i++){ const x=R()*1600, y=yMin+R()*(yMax-yMin), c=cols[i%cols.length], r=4+R()*3;
+    for(let k=0;k<5;k++){ const a=Math.PI*2*k/5; o+=`<circle cx="${f1(x+Math.cos(a)*r)}" cy="${f1(y+Math.sin(a)*r)}" r="${f1(r*.7)}" fill="${c}"/>`; }
+    o+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r*.5)}" fill="#FFE27A"/>`; } return o; }
+const tuft = (x,y) => `<path d="M${x} ${y}q-7 -16 -16 -24M${x} ${y}q1 -22 -3 -34M${x} ${y}q8 -15 18 -21" stroke="${ILL}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+const reed = (x,y,h,c) => `<path d="M${x} ${y}Q${x+5} ${y-h*.6} ${x+3} ${y-h}" stroke="${ILL}" stroke-width="2.6" fill="none" stroke-linecap="round"/><ellipse cx="${x+4}" cy="${y-h-12}" rx="6" ry="15" fill="${c}" stroke="${ILL}" stroke-width="2.5" transform="rotate(8 ${x+4} ${y-h-12})"/>`;
+function dashes(seed,n,yMin,yMax){ const R=mulberry(seed); let o=''; for(let i=0;i<n;i++){ const x=R()*1600,y=yMin+R()*(yMax-yMin),l=14+R()*40; o+=`<path d="M${x|0} ${y|0}h${l|0}" stroke="${ILL}" stroke-width="2.6" stroke-linecap="round" opacity=".8"/>`; } return o; }
+const bird = (x,y,s) => `<path d="M${x-14*s} ${y}q7 -9 14 0q7 -9 14 0" stroke="${ILL}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+const butterfly = (x,y,c) => `<ellipse cx="${x-7}" cy="${y}" rx="8" ry="11" fill="${c}" stroke="${ILL}" stroke-width="2.4" transform="rotate(-20 ${x-7} ${y})"/><ellipse cx="${x+7}" cy="${y}" rx="8" ry="11" fill="${c}" stroke="${ILL}" stroke-width="2.4" transform="rotate(20 ${x+7} ${y})"/><path d="M${x} ${y-9}v18" stroke="${ILL}" stroke-width="3" stroke-linecap="round"/>`;
+const horizon = y => `<path d="M-20 ${y} Q 400 ${y-5} 800 ${y} T 1620 ${y-2}" stroke="${ILL}" stroke-width="3.2" fill="none"/>`;
+
+const SCENES = {
+  sky:()=>`<g filter="url(#p)">${bands(['#8FCBF2','#A5D6F5','#BBE0F8','#D0EAFA','#E6F5FB'],[-60,140,270,390,490],20,21)}</g>
+    ${sun(240,175,62,true)}${cloud(640,190,1.25,'#fff',true)}${cloud(1180,140,.95,'#fff',true)}${cloud(1430,330,.75,'#fff')}${cloud(930,390,.6,'#fff')}
+    ${bird(840,120,1)}${bird(890,150,.8)}${bird(1520,190,.7)}
+    <path d="M1115 455L1170 400L1225 455L1170 520Z" fill="#FF9FB8" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/><path d="M1170 400v120M1115 455h110" stroke="${ILL}" stroke-width="2"/><path d="M1170 520q-20 30 0 55q20 25 -10 55q-40 60 -60 110" stroke="${ILL}" stroke-width="2.2" fill="none"/>
+    ${hill('M-30 650 Q 300 520 700 600 T 1630 560 L1630 930 L-30 930Z','#C9EBB0')}${hill('M-30 735 Q 420 630 900 705 T 1630 690 L1630 930 L-30 930Z','#A8DC8E')}
+    ${flowers(4,26,600,880,['#FF9FB8','#fff','#FFD36E'])}${tuft(200,800)}${tuft(1350,760)}${tuft(760,860)}`,
+  sunset:()=>`<g filter="url(#p)">${bands(['#A99BDD','#C2A2DE','#DFAAD5','#F5B5C5','#FFC7AE','#FFDAA2','#FFEBB6'],[-60,110,210,300,385,465,535],22,31)}</g>
+    ${dots(7,70,0,330,['#FFF3C0','#fff'],1.8)}${stars5(8,10,260,'#FFF0A8')}
+    <circle cx="520" cy="640" r="180" fill="#FFF1C9" opacity=".35"/><circle cx="520" cy="640" r="105" fill="#FFF2C6" stroke="${ILL}" stroke-width="3.5"/>
+    ${cloud(1150,250,.7,'#FFD9E2')}${cloud(300,330,.55,'#FFE3D0')}
+    <g filter="url(#p)">${bands(['#ECBBD3','#D5B2DE','#BCA9DF','#A9A2D9'],[640,705,775,845],8,32)}</g>
+    ${[0,1,2,3,4].map(i=>`<rect x="${520-90+i*16}" y="${662+i*26}" width="${180-i*32}" height="7" rx="3.5" fill="#FFF2C6" opacity="${.8-i*.12}"/>`).join('')}
+    ${horizon(640)}${dashes(33,22,680,880)}
+    ${reed(150,860,70,'#A28FCC')}${reed(190,880,95,'#A28FCC')}${reed(1380,850,80,'#A28FCC')}${reed(1430,870,60,'#A28FCC')}${tuft(1000,830)}${tuft(700,880)}
+    ${bird(1000,330,1)}${bird(1050,355,.8)}${bird(1110,325,.7)}`,
+  forest:()=>`<g filter="url(#p)">${bands(['#B9E3F2','#CDEBF2','#E2F4EE','#F2FAE6'],[-60,190,330,450],18,41)}</g>
+    ${cloud(300,150,.9,'#fff')}${cloud(1250,120,1.05,'#fff',true)}${cloud(820,250,.55,'#fff')}
+    ${hill('M-30 560 Q 250 430 560 520 T 1100 470 T 1630 500 L1630 930 L-30 930Z','#D6EFC0')}
+    ${house(1180,520,1,'#FF8C82',false)}<circle cx="1205" cy="440" r="10" fill="#fff" stroke="${ILL}" stroke-width="2.5"/><circle cx="1222" cy="415" r="13" fill="#fff" stroke="${ILL}" stroke-width="2.5"/>
+    ${tree(380,520,.9,'#9ED58A')}${tree(470,535,.7,'#B5E19C')}
+    ${hill('M-30 660 Q 380 540 820 630 T 1630 600 L1630 930 L-30 930Z','#B5E19C')}
+    <path d="M1140 528 Q 1060 600 1180 650 Q 1320 720 1080 800 Q 900 860 960 930" stroke="${ILL}" stroke-width="40" fill="none" stroke-linecap="round"/><path d="M1140 528 Q 1060 600 1180 650 Q 1320 720 1080 800 Q 900 860 960 930" stroke="#F4E4C1" stroke-width="34" fill="none" stroke-linecap="round"/>
+    ${hill('M-30 760 Q 300 690 650 740 T 1630 740 L1630 930 L-30 930Z','#93CF7E')}
+    ${tree(160,700,1.1,'#7FC27A')}${tree(1480,650,1,'#8ED08A')}${tree(640,650,.8,'#9ED58A')}
+    ${flowers(5,30,700,890,['#FF9FB8','#fff','#FFD36E','#B9A8F5'])}${butterfly(820,520,'#FFB3C7')}${butterfly(330,620,'#FFE08A')}${tuft(900,860)}${tuft(1300,830)}`,
+  night:()=>`<g filter="url(#p)">${bands(['#8A95D5','#9C9EDA','#B3A4DE','#CDACDB','#E4B7D7','#F3C7D2','#FAD9CA','#FFEDC0'],[-60,115,225,315,395,465,525,578],24,51)}</g>
+    ${dots(52,260,0,560,['#FFE58A','#FFF3C0','#ffffff'],2.2)}${stars5(53,34,470,'#FFE27A')}
+    ${shooting(560,95,130)}${shooting(1270,250,95)}${shooting(380,330,70)}${moon(1360,150,36)}
+    <g filter="url(#p)">${bands(['#C9C3EF','#B8B3E7','#ABA7E1'],[640,725,815],10,54)}</g>
+    ${horizon(640)}${house(1200,643,.45,'#C9A6E8',true)}${house(1262,643,.38,'#F4A9C4',true)}
+    ${dashes(55,26,670,890)}${reed(120,850,70,'#9C8BC4')}${reed(160,870,95,'#9C8BC4')}${reed(560,800,60,'#9C8BC4')}${reed(1480,860,85,'#9C8BC4')}${reed(1000,880,70,'#9C8BC4')}
+    ${tuft(320,770)}${tuft(870,830)}${tuft(1250,790)}${sparkles(56,10,660,880,'#FFF3A8')}`,
+  ocean:()=>`<g filter="url(#p)">${bands(['#A5D8F5','#BDE3F8','#D4EEFA','#E8F7FC'],[-60,140,270,390],18,61)}</g>
+    ${sun(1320,170,56,true)}${cloud(380,170,1,'#fff',true)}${cloud(860,110,.7,'#fff')}${bird(640,230,1)}${bird(690,255,.8)}
+    <g filter="url(#p)">${bands(['#9AD6EC','#83C8E5','#6DB9DD','#5CA7D3'],[520,600,700,800],7,62)}</g>
+    <path d="M-20 520 Q 400 515 800 520 T 1620 518" stroke="${ILL}" stroke-width="3" fill="none"/>
+    ${(()=>{ const R=mulberry(63); let o=''; for(let i=0;i<34;i++){ const x=R()*1560, y=550+R()*330; o+=`<path d="M${x|0} ${y|0}q12 -10 24 0q12 -10 24 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/>`; } return o; })()}
+    <path d="M430 540 L590 540 L570 575 L450 575Z" fill="#FF9F8A" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/><path d="M510 540V420" stroke="${ILL}" stroke-width="3.5"/><path d="M514 425 L575 530 L514 530Z" fill="#fff" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/><path d="M506 440 L462 530 L506 530Z" fill="#FFE08A" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M1130 700 q-30 -60 -55 -50 q20 10 35 40 q-30 -20 -45 -5 q30 10 45 35 z" fill="#7FA9E8" stroke="${ILL}" stroke-width="3" stroke-linejoin="round"/><path d="M1080 705 q30 -10 60 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${sparkles(64,8,560,860,'#ffffff')}`,
+  cherry:()=>`<g filter="url(#p)">${bands(['#F7CFE2','#FAD9E7','#FCE4EC','#FFF0F0'],[-60,200,370,500],18,71)}</g>
+    ${cloud(1150,170,.9,'#fff',true)}${cloud(700,110,.6,'#fff')}
+    ${hill('M-30 650 Q 400 560 900 620 T 1630 600 L1630 930 L-30 930Z','#DDF0CB')}${hill('M-30 760 Q 500 690 1000 740 T 1630 730 L1630 930 L-30 930Z','#C7E6B0')}
+    <path d="M-20 900 Q 120 700 160 520 Q 190 380 120 230 M160 520 Q 300 420 470 380 M150 400 Q 60 330 -10 320 M300 440 Q 330 330 420 270" stroke="${ILL}" stroke-width="34" fill="none" stroke-linecap="round"/>
+    <path d="M-20 900 Q 120 700 160 520 Q 190 380 120 230 M160 520 Q 300 420 470 380 M150 400 Q 60 330 -10 320 M300 440 Q 330 330 420 270" stroke="#B98468" stroke-width="27" fill="none" stroke-linecap="round"/>
+    ${(()=>{ const R=mulberry(72); const cl=[[120,220],[60,300],[0,310],[180,300],[470,370],[420,260],[340,330],[250,400],[520,320],[90,420]]; let a='',b='';
+      cl.forEach(([x,y])=>{ for(let i=0;i<7;i++){ const cx=x+(R()*2-1)*55, cy=y+(R()*2-1)*45, r=24+R()*18; a+=`<circle cx="${cx|0}" cy="${cy|0}" r="${(r+3)|0}" fill="${ILL}"/>`; b+=`<circle cx="${cx|0}" cy="${cy|0}" r="${r|0}" fill="${['#FFC2D6','#FFD4E2','#FFB3CB'][i%3]}"/>`; } }); return a+b; })()}
+    ${(()=>{ const R=mulberry(73); let o=''; for(let i=0;i<46;i++){ const x=R()*1600, y=R()*880, rot=(R()*360)|0; o+=`<ellipse cx="${x|0}" cy="${y|0}" rx="7" ry="4.5" fill="#FFB3CB" stroke="${ILL}" stroke-width="1.6" transform="rotate(${rot} ${x|0} ${y|0})"/>`; } return o; })()}
+    ${flowers(74,14,700,880,['#fff','#FFD36E'])}${tuft(900,830)}${tuft(1400,800)}`,
+  snow:()=>`<g filter="url(#p)">${bands(['#9DB2E6','#B2C1EA','#C9D1EF','#DFE1F3','#F1EDF5'],[-60,150,290,410,510],20,81)}</g>
+    ${dots(82,60,0,300,['#fff'],1.6)}${moon(1300,140,32)}
+    ${hill('M-30 600 Q 300 500 700 570 T 1630 540 L1630 930 L-30 930Z','#F3F5FF')}
+    ${pine(260,580,.9,true)}${pine(330,600,.7,true)}${house(980,585,1,'#8EB8F0',true)}${house(1100,595,.8,'#F4A9C4',true)}${pine(1420,570,1,true)}
+    ${hill('M-30 720 Q 450 630 950 700 T 1630 680 L1630 930 L-30 930Z','#FFFFFF')}
+    <circle cx="560" cy="770" r="52" fill="#fff" stroke="${ILL}" stroke-width="3.5"/><circle cx="560" cy="690" r="36" fill="#fff" stroke="${ILL}" stroke-width="3.5"/>${face(560,688,.7)}<path d="M560 694 l22 5 l-22 4z" fill="#FFA45C" stroke="${ILL}" stroke-width="2"/><path d="M528 716 q32 14 64 0 l2 12 q-34 14 -68 0z" fill="#FF8C82" stroke="${ILL}" stroke-width="2.5"/>
+    ${pine(1300,820,1.1,true)}${(()=>{ const R=mulberry(84); let o=''; for(let i=0;i<120;i++) o+=`<circle cx="${(R()*1600)|0}" cy="${(R()*900)|0}" r="${f1(2+R()*4)}" fill="#fff" opacity="${(.6+R()*.4).toFixed(2)}"/>`; return o; })()}`,
+  lavender:()=>`<g filter="url(#p)">${bands(['#C6B3EE','#D9BFED','#ECCBE7','#F9DADF','#FFE9D6'],[-60,170,300,420,520],22,91)}</g>
+    ${dots(92,40,0,260,['#fff','#FFF3C0'],1.6)}<circle cx="1150" cy="600" r="140" fill="#FFF1C9" opacity=".35"/><circle cx="1150" cy="600" r="80" fill="#FFF0C2" stroke="${ILL}" stroke-width="3.5"/>
+    ${cloud(360,200,.85,'#FFF4FA',true)}${cloud(900,140,.55,'#FFF4FA')}
+    <g filter="url(#p)">${bands(['#C2AEE6','#B29DDD','#A28CD3','#937DC9'],[600,670,750,830],8,93)}</g>${horizon(600)}
+    ${(()=>{ const R=mulberry(94); let o=''; for(let y=630;y<900;y+=30){ const gap=22+(y-600)*.2, h=16+(y-600)*.12; for(let x=-10+R()*gap;x<1620;x+=gap){ o+=`<path d="M${x|0} ${y}v-${h|0}" stroke="#7A6A9C" stroke-width="1.8" opacity=".6"/><ellipse cx="${x|0}" cy="${(y-h)|0}" rx="${f1(2.2+h*.06)}" ry="${f1(h*.32)}" fill="${R()<.5?'#9B7FD6':'#B79BE6'}"/>`; } } return o; })()}
+    ${butterfly(640,520,'#FFE08A')}${butterfly(1450,470,'#FFB3C7')}`,
+  custom:(c)=>`<g filter="url(#p)">${bands([mix(c,'#ffffff',.25),mix(c,'#ffffff',.4),mix(c,'#ffffff',.55),mix(c,'#ffffff',.7),mix(c,'#ffffff',.82)],[-60,170,320,460,600],22,101)}</g>
+    ${sparkles(102,22,30,860,'#ffffff')}${dots(103,60,0,880,['#fff'],2)}${cloud(300,200,.8,'#fff',true)}${cloud(1250,640,.7,'#fff')}`
+};
+const WALLS = [
+  {k:'night', n:'별밤'}, {k:'sunset', n:'노을'}, {k:'sky', n:'하늘 구름'}, {k:'forest', n:'초록 언덕'},
+  {k:'ocean', n:'바다'}, {k:'cherry', n:'벚꽃'}, {k:'snow', n:'눈 오는 마을'}, {k:'lavender', n:'라벤더 꽃밭'}
+];
+function wallSvg(k, c){
+  const inner = k==='custom' ? SCENES.custom(c||'#B9A8F5') : (SCENES[k]||SCENES.night)();
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"><defs>`
+   + `<filter id="p" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.007 0.035" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="24"/></filter>`
+   + `<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" seed="3"/><feColorMatrix values="0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .3 0 0 0 .07 0"/></filter>`
+   + `<linearGradient id="ss" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF4B0" stop-opacity="0"/><stop offset="1" stop-color="#FFF8D0"/></linearGradient></defs>`
+   + inner + `<rect width="1600" height="900" filter="url(#g)"/></svg>`;
+}
+const _wallCache = {};
+function wallUrl(k, c){ const key=k+(c||''); if(!_wallCache[key]) _wallCache[key]=`url('data:image/svg+xml,${encodeURIComponent(wallSvg(k,c)).replace(/'/g,'%27')}')`; return _wallCache[key]; }
+
+const wallKey = () => `ce_wallimg_${S.code}_${S.role==='teacher'?'T':S.sid}`;
+function wallCss(){
+  const p=prefs(); let k=p.wall || lsGet('ce_wall') || 'night', img=null;
+  if(k==='photo'){ img = (S.screen==='home'||S.screen==='app') ? lsGet(wallKey()) : lsGet('ce_wallimg_last'); if(!img) k='night'; }
+  if(img) return `center/cover no-repeat url("${img}")`;
+  if(k==='custom') return `#eee center bottom/cover no-repeat ${wallUrl('custom', p.wallColor || lsGet('ce_wallcolor') || '#B9A8F5')}`;
+  if(!SCENES[k] || k==='custom') k='night';
+  return `#eee center bottom/cover no-repeat ${wallUrl(k)}`;
+}
+function setWallColor(v){ setPref('wallColor',v); lsSet('ce_wallcolor',v); setWall('custom'); }
+function setWall(k){
+  setPref('wall',k,1); lsSet('ce_wall',k);
+  if(k==='photo'){ const im=lsGet(wallKey()); if(im) lsSet('ce_wallimg_last',im); }
+  toast('배경화면을 바꿨어요 🖼️');
+}
+function wallPhoto(inp){
+  const f=inp.files && inp.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const im=new Image(); im.onload=()=>{
+      const mx=1600, r=Math.min(1, mx/Math.max(im.width, im.height)), cv=document.createElement('canvas');
+      cv.width=Math.round(im.width*r); cv.height=Math.round(im.height*r); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+      let data=cv.toDataURL('image/jpeg',.78);
+      try{ localStorage.setItem(wallKey(),data); }catch(e){ data=cv.toDataURL('image/jpeg',.5); try{ localStorage.setItem(wallKey(),data); }catch(e2){ return toast('사진이 너무 커서 저장할 수 없어요'); } }
+      memStore[wallKey()]=data; setWall('photo');
+    }; im.onerror=()=>toast('사진을 열 수 없어요'); im.src=rd.result; };
+  rd.readAsDataURL(f);
+}
+function clockText(){ const d=new Date(); return `${d.getHours()<12?'오전':'오후'} ${((d.getHours()+11)%12)+1}:${pad(d.getMinutes())}`; }
+function dateText(){ const d=new Date(); return `${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`; }
+const EMO = '(?:\\p{Extended_Pictographic}(?:\\uFE0F|\\u200D\\p{Extended_Pictographic}|[\\u{1F3FB}-\\u{1F3FF}])*)';
+const RX_H3 = new RegExp(`(<h3[^>]*>)\\s*${EMO}+\\s*`, 'gu');
+const RX_BTN = new RegExp(`(<button class="(?:tab|btn)[^"]*"[^>]*>)\\s*${EMO}+\\s+(?=[^\\s<])`, 'gu');
+function tidy(html){ try{ return html.replace(RX_H3,'$1').replace(RX_BTN,'$1'); }catch(e){ return html; } }
 
 /* ---------- 앱 목록 ---------- */
 function allApps(){
@@ -674,7 +1080,7 @@ function doRename(key){ const v=val('rnIn'); if(!v) return toast('이름을 입�
    ========================================================= */
 function render(){
   if(SYNC.on && !SYNC.got && S.screen!=='code' && !C()){
-    $('app').innerHTML=`<div class="center-screen"><div class="card login-card"><div class="logo">☁️</div><h1>연결하는 중…</h1><p class="sub">잠시만 기다려 주세요</p></div></div>`; return;
+    $('app').innerHTML=`<div class="lock"><div class="lock-clock">${clockText()}</div><div class="lock-date">${dateText()}</div><div class="card login-card glass"><div class="logo-ic">${appIcon('school')}</div><h1>연결하는 중…</h1><p class="sub">잠시만 기다려 주세요</p></div></div>`; return;
   }
   if(S.screen!=='code' && !C()) S=freshS();
   if((S.screen==='home'||S.screen==='app') && S.role==='student' && !me()) S=freshS();
@@ -689,14 +1095,17 @@ function render(){
     case 'app':  h=vApp(); break;
     default:     h=vCode();
   }
-  $('app').innerHTML=h;
+  if(S.screen==='code'||S.screen==='role'||S.screen==='pick'||S.screen==='pin')
+    h=`<div class="lock"><div class="lock-clock" id="lockClock">${clockText()}</div><div class="lock-date">${dateText()}</div>
+      <div class="win login-win ${S.screen==='pick'?'wide':''}"><div class="win-title" style="background:${titleColor('school')}"><span class="win-name">${{code:'우리반 경제나라',role:'로그인',pick:'학생 로그인',pin:'비밀번호'}[S.screen]}</span><span class="win-btn deco">${svgI('min')}</span><span class="win-btn deco">${svgI('close')}</span></div>${h}</div></div>`;
+  $('app').innerHTML=tidy(h);
   saveSess();
 }
 
 /* ---------- 로그인 ---------- */
 function vCode(){
-  return `<div class="center-screen"><div class="card login-card">
-    <div class="logo">🏫</div>
+  return `<div class="card login-card glass">
+    <div class="logo-ic">${appIcon('school')}</div>
     <h1>우리반 경제나라</h1>
     <p class="sub">선생님께 받은 학급 코드를 입력하세요</p>
     <input id="codeIn" class="big-input" placeholder="학급 코드" maxlength="12" autocomplete="off" onkeydown="if(event.key==='Enter')enterCode()">
@@ -704,7 +1113,7 @@ function vCode(){
     ${DB.classes.SUNNY?`<div class="hint">🌟 체험용 학급 코드 <b>SUNNY</b><br>선생님 비밀번호 0000 · 학생(김하늘) 1111</div>`:''}
     <button class="link" onclick="openNewClass()">👩‍🏫 선생님: 새 학급 만들기</button><br>
     <button class="link" onclick="restoreNewForm()">💾 백업 파일로 학급 되살리기</button>
-  </div></div>`;
+  </div>`;
 }
 function restoreNewForm(){
   modal('💾 백업으로 학급 되살리기', `<p class="sub">설정 → [백업 파일 받기]로 저장해 둔 파일을 고르세요.</p>
@@ -745,33 +1154,33 @@ function createClass(){
 }
 function vRole(){
   const c=C();
-  return `<div class="center-screen"><div class="card login-card">
-    <div class="logo">🌷</div><h1>${esc(c.name)}</h1><p class="sub">누구인가요?</p>
+  return `<div class="card login-card glass">
+    <h1>${esc(c.name)}</h1><p class="sub">누구인가요?</p>
     <div class="role-btns">
-      <button class="role-btn" style="background:var(--yel)" onclick="S.role='student';S.screen='pick';render()"><span>🧒</span>학생</button>
-      <button class="role-btn" style="background:var(--mint)" onclick="S.role='teacher';S.pin='';S.screen='pin';render()"><span>👩‍🏫</span>선생님</button>
+      <button class="role-btn" onclick="S.role='student';S.screen='pick';render()">${appIcon('student')}학생</button>
+      <button class="role-btn" onclick="S.role='teacher';S.pin='';S.screen='pin';render()">${appIcon('teacher')}선생님</button>
     </div>
     <button class="link" onclick="S=freshS();render()">← 학급 코드 다시 입력</button>
-  </div></div>`;
+  </div>`;
 }
 function vPick(){
   const list=sorted();
-  return `<div class="center-screen"><div class="card login-card" style="max-width:560px">
-    <div class="logo">🧒</div><h1>내 이름을 눌러요</h1>
-    ${list.length?`<div class="pick-grid">${list.map(s=>`<button class="pick-btn" onclick="S.pick='${s.id}';S.pin='';S.screen='pin';render()"><small>${s.num}번</small>${esc(s.name)}</button>`).join('')}</div>`
+  return `<div class="card login-card glass" style="max-width:600px">
+    <h1>내 이름을 눌러요</h1>
+    ${list.length?`<div class="pick-grid">${list.map(s=>`<button class="pick-btn" onclick="S.pick='${s.id}';S.pin='';S.screen='pin';render()"><span class="avatar md">${esc(s.name.slice(0,1))}</span><small>${s.num}번</small>${esc(s.name)}</button>`).join('')}</div>`
       :`<p class="empty">아직 학생 계정이 없어요.<br>선생님께 계정을 만들어 달라고 해요!</p>`}
     <button class="link" onclick="S.screen='role';render()">← 뒤로</button>
-  </div></div>`;
+  </div>`;
 }
 function vPin(){
-  const who = S.role==='teacher' ? '👩‍🏫 선생님' : '🧒 ' + esc(stuName(S.pick));
+  const who = S.role==='teacher' ? '선생님' : esc(stuName(S.pick));
   const keys=['1','2','3','4','5','6','7','8','9','←','0','✓'];
-  return `<div class="center-screen"><div class="card login-card">
-    <h1>${who}</h1><p class="sub">비밀번호 네 자리를 눌러요</p>
+  return `<div class="card login-card glass">
+    <span class="avatar lg">${S.role==='teacher'?svgI('teacher'):who.slice(0,1)}</span><h1 style="margin-top:0">${who}</h1><p class="sub">비밀번호 네 자리를 눌러요</p>
     <div class="dots" id="pinDots">${[0,1,2,3].map(i=>`<div class="dot ${i<S.pin.length?'on':''}"></div>`).join('')}</div>
     <div class="keypad">${keys.map(k=>`<button class="key" onclick="pinKey('${k}')">${k}</button>`).join('')}</div>
     <button class="link" onclick="S.pin='';S.screen=S.role==='teacher'?'role':'pick';render()">← 뒤로</button>
-  </div></div>`;
+  </div>`;
 }
 function pinKey(k){
   if(k==='←') S.pin=S.pin.slice(0,-1);
@@ -788,34 +1197,42 @@ function checkPin(){
 }
 function logout(){ const code=S.code; S=freshS(); S.code=code; S.screen='role'; render(); toast('로그아웃했어요 👋'); }
 
-/* ---------- 상단바 / 홈 ---------- */
-function topbar(title, back){
-  const tbtn = S.role==='teacher' ? `<button class="btn sm ${S.preview?'':'sub'}" onclick="togglePreview()">${S.preview?'👩‍🏫 선생님 화면':'👀 학생 화면 보기'}</button>` : '';
-  return `<div class="topbar">${back?`<button class="icon-btn" onclick="goHome()" title="홈">←</button>`:`<div class="brand">🏫</div>`}
-    <div class="tb-title clip">${title}</div>${tbtn}</div>
-    ${S.preview?`<div class="preview-banner">👀 지금은 학생들이 보는 화면이에요 (미리보기)</div>`:''}`;
+/* ---------- 작업 표시줄 / 바탕화면 / 창 ---------- */
+function userName(){ return S.role==='teacher' ? '선생님' : ((me()||{}).name||''); }
+function taskbar(a){
+  const c=C(), nm=userName();
+  return `<div class="taskbar">
+    <button class="tb-start" onclick="goHome()" title="바탕화면으로">${appIcon('school')}<span class="clip">${esc(c.name)}</span></button>
+    <div class="tb-sep"></div>
+    <div class="tb-apps">${a?`<button class="tb-app" onclick="toTop()">${appIcon(a.k)}<span class="clip">${esc(a.t)}</span></button>`:''}</div>
+    ${S.role==='teacher'?`<button class="tb-btn ${S.preview?'on':''}" onclick="togglePreview()">${S.preview?'선생님 화면으로':'학생 화면 보기'}</button>`:''}
+    <span class="tb-user"><span class="avatar sm">${esc(nm.slice(0,1)||'?')}</span><span class="clip">${esc(nm)}</span></span>
+    <span class="tb-clock"><span id="tbClock">${clockText()}</span><br><span class="sub" style="font-family:'Gowun Dodum'">${(()=>{const d=new Date();return `${d.getMonth()+1}/${d.getDate()}`})()}</span></span>
+    <button class="tb-ico" title="로그아웃" onclick="ask('로그아웃할까요?', logout, '로그아웃')">${svgI('power')}</button>
+  </div>`;
 }
+const previewBar = () => S.preview ? `<div class="preview-bar">👀 지금은 학생들이 보는 화면이에요 (미리보기)</div>` : '';
 function vHome(){
   const c=C(), s=me(), b=badges();
-  let hero;
+  let w='';
   if(s){
     const j=jobOf(s);
-    hero=`<div class="card hero"><div class="hello">안녕하세요, <b>${esc(s.name)}</b>님! 👋</div>
-      <div class="sub">내 통장 잔액</div><div class="money-big">${won(s.balance)}</div>
-      <div><span class="chip">${j?j.emoji+' '+esc(j.name):'🙂 아직 직업 없음'}</span><span class="chip mint">🐷 예금 ${won(s.savings)}</span><span class="chip yel">💳 신용 ${grade(s)}등급</span></div></div>`;
+    w+=`<div class="widget glass"><div class="w-bar" style="background:${titleColor('student')}">내 정보<i></i></div><div class="w-body"><div class="row" style="gap:12px;flex-wrap:nowrap"><span class="avatar md">${esc(s.name.slice(0,1))}</span><div style="min-width:0"><b class="jua big">${esc(s.name)}</b><div class="sub">${j?esc(j.emoji+' '+j.name):'아직 직업 없음'}</div></div></div>
+      <div class="sub mt">내 통장 잔액</div><div class="money-big">${won(s.balance)}</div>
+      <div><span class="chip mint">예금 ${won(s.savings)}</span><span class="chip yel">신용 ${grade(s)}등급</span></div></div></div>`;
   } else {
     const pend=(b.jobs||0)+(b.realty||0)+(b.ins||0)+(b.mart||0);
-    hero=`<div class="card hero"><div class="hello">선생님, 오늘도 좋은 하루 보내세요! 🌷</div>
-      <div class="stats3"><div class="stat"><div class="n">${c.students.length}명</div><div class="sub">학생</div></div>
-      <div class="stat"><div class="n">${won(c.budget)}</div><div class="sub">정부 예산</div></div>
-      <div class="stat"><div class="n">${pend}건</div><div class="sub">처리할 일</div></div></div>
+    w+=`<div class="widget glass"><div class="w-bar" style="background:${titleColor('teacher')}">${esc(c.name)} · 선생님<i></i></div><div class="w-body">
+      <div class="stats3"><div class="stat"><div class="n">${c.students.length}</div><div class="sub">학생</div></div>
+      <div class="stat"><div class="n">${pend}</div><div class="sub">처리할 일</div></div>
+      <div class="stat"><div class="n" style="font-size:1rem;line-height:1.9">${won(c.budget)}</div><div class="sub">정부 예산</div></div></div>
       <div class="sub mt">학급 코드 <b>${esc(c.code)}</b> · 학생들에게 알려주세요</div>${storageNote()}
-      ${(!c.lastBackup || Date.now()-new Date(c.lastBackup).getTime() > 2*864e5) ? `<div class="alert">💾 ${c.lastBackup?`마지막 백업이 ${Math.floor((Date.now()-new Date(c.lastBackup).getTime())/864e5)}일 전이에요.`:'아직 백업한 적이 없어요.'} 데이터를 잃지 않게 백업해 두세요! <button class="btn sm" onclick="backupFile()">지금 백업</button></div>` : ''}</div>`;
+      ${(!c.lastBackup || Date.now()-new Date(c.lastBackup).getTime() > 2*864e5) ? `<div class="alert">💾 ${c.lastBackup?`마지막 백업이 ${Math.floor((Date.now()-new Date(c.lastBackup).getTime())/864e5)}일 전이에요.`:'아직 백업한 적이 없어요.'} <button class="btn sm" onclick="backupFile()">지금 백업</button></div>` : ''}</div></div>`;
   }
   const n=c.notices[0];
-  const notice = n ? `<div class="card notice" onclick="openApp('news','notice')"><b>📢 ${esc(n.title)}</b><div class="sub clip">${esc(n.body)}</div></div>` : '';
-  const tiles = visibleApps().map(a=>`<button class="tile" style="background:${a.col}" onclick="openApp('${a.k}')">${b[a.k]?`<span class="badge">${b[a.k]}</span>`:''}<span class="ic">${a.e}</span><span>${esc(a.t)}</span>${a.tOnly?'<span class="tag">선생님 전용</span>':''}</button>`).join('');
-  return topbar(esc(c.name)+' 경제나라', false) + hero + notice + `<div class="app-grid">${tiles}</div>`;
+  if(n) w+=`<button class="sticky" onclick="openApp('news','notice')" style="text-align:left;font-family:inherit;color:var(--ink)"><b>📌 ${esc(n.title)}</b><div class="sub" style="margin-top:4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(n.body)}</div></button>`;
+  const icons = visibleApps().map(a=>`<button class="dicon" onclick="openApp('${a.k}')" title="${esc(a.t)}">${b[a.k]?`<span class="badge">${b[a.k]}</span>`:''}${appIcon(a.k)}<span class="dicon-label">${esc(a.t)}</span></button>`).join('');
+  return previewBar() + `<div class="desktop"><div class="desk-icons">${icons}</div><div class="desk-widgets">${w}</div></div>` + taskbar(null);
 }
 function vApp(){
   const a = allApps().find(x=>x.k===S.app);
@@ -824,8 +1241,12 @@ function vApp(){
   if(a.tOnly && !T()) body=`<div class="card empty">👀 이 메뉴는 선생님에게만 보여요.</div>`;
   else if(a.feat && !C().features[a.feat]) body=`<div class="card empty">아직 열리지 않은 기능이에요.</div>`;
   else body=a.fn();
-  const rn = a.rename && T() ? `<div class="row end" style="margin:-4px 0 12px"><button class="btn sm sub" onclick="renameApp('${a.rename}')">✏️ 이름 바꾸기</button></div>` : '';
-  return topbar(a.e+' '+esc(a.t), true) + rn + body;
+  const rn = a.rename && T() ? `<button class="win-btn" style="width:auto;padding:0 10px;font-size:.85rem" title="이름 바꾸기" onclick="renameApp('${a.rename}')"><span style="width:15px;height:15px;display:inline-block;margin-right:4px">${svgI('pencil')}</span>이름 바꾸기</button>` : '';
+  return previewBar() + `<div class="win-wrap"><div class="win">
+    <div class="win-title" style="background:${titleColor(a.k)}">${appIcon(a.k)}<span class="win-name clip">${esc(a.t)}</span>${rn}
+      <button class="win-btn" title="최소화 (바탕화면으로)" onclick="goHome()">${svgI('min')}</button>
+      <button class="win-btn close" title="닫기" onclick="goHome()">${svgI('close')}</button></div>
+    <div class="win-body">${body}</div></div></div>` + taskbar(a);
 }
 
 /* =========================================================
@@ -1248,7 +1669,7 @@ function taxStat(){
   return gs.map(([gid,g])=>{ const paid=g.list.filter(b=>b.paid), unpaid=g.list.filter(b=>!b.paid);
     return `<div class="card"><div class="row between"><b class="jua big">🧾 ${esc(g.title)}</b><span class="meta">${fday(g.date)} · 1인당 ${won(g.amount)}</span></div>
     <div class="bar-row"><span class="nm">납부율</span><div class="bt"><div class="bf" style="width:${Math.round(paid.length/g.list.length*100)}%"></div></div><span class="vv">${paid.length}/${g.list.length}명</span></div>
-    ${unpaid.length?`<div class="sub">아직 안 낸 학생: ${unpaid.map(b=>esc(stuName(b.sid))).join(', ')}</div><div class="row end mt"><button class="btn sm sub" onclick="cancelBills('${gid}')">안 낸 고지서 취소</button></div>`:'<div class="plus">모두 냈어요! 🎉</div>'}</div>`; }).join('') || '<div class="card empty">보낸 고지서가 없어요</div>';
+    ${unpaid.length?`<div class="sub">아직 안 낸 학생: ${unpaid.map(b=>esc(stuName(b.sid))).join(', ')}</div>${T()?`<div class="row end mt"><button class="btn sm sub" onclick="cancelBills('${gid}')">안 낸 고지서 취소</button></div>`:''}`:'<div class="plus">모두 냈어요! 🎉</div>'}</div>`; }).join('') || '<div class="card empty">보낸 고지서가 없어요</div>';
 }
 function cancelBills(gid){ ask('아직 내지 않은 고지서를 취소할까요?', ()=>{ const c=C(); c.taxBills=c.taxBills.filter(b=>!(b.gid===gid&&!b.paid)); save(); render(); }); }
 function taxNoticeManage(){ return postManager('taxNotices','세금 공지'); }
@@ -1917,7 +2338,19 @@ function appSettings(){
   <div class="card"><h3>🎨 화면 꾸미기</h3>
     <label class="f">화면 밝기 <b id="brv">${p.bright||100}%</b></label><input type="range" min="40" max="100" value="${p.bright||100}" oninput="setPref('bright',+this.value);$('brv').textContent=this.value+'%'">
     <label class="f">글자 크기</label><div class="row">${[['작게',14],['보통',16],['크게',18],['아주 크게',20]].map(([l,v])=>`<button class="btn sm ${(p.font||16)===v?'':'sub'}" onclick="setPref('font',${v},1)">${l}</button>`).join('')}</div>
-    <label class="f">배경 테마</label><div class="row">${THEMES.map(t=>`<button class="swatch ${(p.theme||'peach')===t.k?'on':''}" style="background:${t.c}" title="${t.n}" onclick="setPref('theme','${t.k}',1)"></button>`).join('')}</div></div></div>`;
+</div></div>
+  <div class="card mt"><h3>🎨 색깔 바꾸기</h3>
+    <label class="f">버튼·탭 색</label><div class="row">${ACCENTS.map(([n,v])=>`<button class="swatch ${accentOf(p).toLowerCase()===v.toLowerCase()?'on':''}" style="background:${v}" title="${n}" onclick="setPref('theme','${v}',1)"></button>`).join('')}
+      <label class="swatch pick" title="직접 고르기" style="background:${accentOf(p)}"><input type="color" value="${accentOf(p)}" onchange="setPref('theme',this.value,1)"></label></div>
+    <label class="f">창 제목줄 색</label><div class="row"><button class="btn sm ${(!p.title||p.title==='rainbow')?'':'sub'}" onclick="setPref('title','rainbow',1)">🌈 앱마다 알록달록</button>${TITLES.map(([n,v])=>`<button class="swatch ${p.title===v?'on':''}" style="background:${v}" title="${n}" onclick="setPref('title','${v}',1)"></button>`).join('')}
+      <label class="swatch pick" title="직접 고르기" style="background:${(p.title&&p.title!=='rainbow')?p.title:'#FBB4CF'}"><input type="color" value="${(p.title&&p.title!=='rainbow')?p.title:'#FBB4CF'}" onchange="setPref('title',this.value,1)"></label></div>
+    <label class="f">테두리 색</label><div class="row">${OUTLINES.map(([n,v])=>`<button class="btn sm ${(p.outline||'#3F3A5E')===v?'':'sub'}" onclick="setPref('outline','${v}',1)"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${v};vertical-align:-2px;margin-right:4px"></span>${n}</button>`).join('')}</div>
+    <div class="row end mt"><button class="btn sm sub" onclick="['theme','title','outline'].forEach(k=>delete prefs()[k]);save();render()">기본 색으로 되돌리기</button></div></div>
+  <div class="card mt"><h3>🖼️ 배경화면</h3>
+    <div class="wall-grid">${WALLS.map(w=>`<button class="wall ${(p.wall||lsGet('ce_wall')||'night')===w.k?'on':''}" style="background:center/cover ${wallUrl(w.k)}" onclick="setWall('${w.k}')"><span>${w.n}</span></button>`).join('')}
+      <label class="wall ${p.wall==='custom'?'on':''}" style="background:center/cover ${wallUrl('custom', p.wallColor||lsGet('ce_wallcolor')||'#B9A8F5')}"><span>🎨 내가 고른 색</span><input type="color" value="${p.wallColor||lsGet('ce_wallcolor')||'#B9A8F5'}" onchange="setWallColor(this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+      <label class="wall photo ${p.wall==='photo'&&lsGet(wallKey())?'on':''}" ${lsGet(wallKey())?`style="background:center/cover url('${lsGet(wallKey())}')"`:''}><span>📷 내 사진</span><input type="file" accept="image/*" hidden onchange="wallPhoto(this)"></label></div>
+    <p class="sub">📷 내 사진은 이 기기에만 저장돼요. 다른 기기에서는 기본 배경으로 보여요.</p></div>`;
   if(T()){
     h+=`<div class="two mt">
     <div class="card"><h3>🏫 학급 정보</h3><label class="f">학급 이름</label><input id="clN" value="${esc(c.name)}">
@@ -1998,6 +2431,7 @@ function deleteClass(){
   });
   render();
   syncStart();
+  setInterval(()=>{ ['tbClock','lockClock'].forEach(id=>{ const e=$(id); if(e) e.textContent=clockText(); }); }, 10000);
 })();
 </script>
 </body>
